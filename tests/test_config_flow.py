@@ -1,7 +1,8 @@
 """Test dyson_ir config flow."""
-from unittest.mock import patch
 from homeassistant import config_entries, data_entry_flow
+
 from custom_components.dyson_ir.const import DOMAIN
+
 
 async def test_show_form(hass):
     """Test that the form is served with no input."""
@@ -11,6 +12,7 @@ async def test_show_form(hass):
 
     assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
     assert result["step_id"] == "user"
+
 
 async def test_step_user_to_device(hass):
     """Test that the user step moves to device step."""

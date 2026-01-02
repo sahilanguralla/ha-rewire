@@ -1,14 +1,11 @@
 """Dyson IR integration."""
-import asyncio
 import logging
 from typing import Final
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import DOMAIN, PLATFORMS
+from .const import DOMAIN
 from .coordinator import DysonIRCoordinator
 
 _LOGGER = logging.getLogger(__name__)

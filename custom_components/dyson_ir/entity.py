@@ -1,5 +1,4 @@
 """Base entity for Dyson IR devices."""
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo, Entity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 

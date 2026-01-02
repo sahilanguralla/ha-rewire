@@ -4,10 +4,20 @@ from typing import Any, Dict, Optional
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import device_registry as dr, entity_registry as er, selector
+from homeassistant.core import callback
+from homeassistant.helpers import selector
 
-from .const import DEVICE_TYPES, DOMAIN, IR_CODE_HEAT_OFF, IR_CODE_HEAT_ON, IR_CODE_OSCILLATE, IR_CODE_POWER_OFF, IR_CODE_POWER_ON, IR_CODE_SPEED_DOWN, IR_CODE_SPEED_UP
+from .const import (
+    DEVICE_TYPES,
+    DOMAIN,
+    IR_CODE_HEAT_OFF,
+    IR_CODE_HEAT_ON,
+    IR_CODE_OSCILLATE,
+    IR_CODE_POWER_OFF,
+    IR_CODE_POWER_ON,
+    IR_CODE_SPEED_DOWN,
+    IR_CODE_SPEED_UP,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,13 +44,15 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self.config_data = user_input
             return await self.async_step_ir_codes()
 
-        schema = vol.Schema({
-            vol.Required("name", default="Dyson Fan"): str,
-            vol.Required("device_type", default="AM09"): vol.In(DEVICE_TYPES),
-            vol.Required("ir_blaster_entity"): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain="remote")
-            ),
-        })
+        schema = vol.Schema(
+            {
+                vol.Required("name", default="Dyson Fan"): str,
+                vol.Required("device_type", default="AM09"): vol.In(DEVICE_TYPES),
+                vol.Required("ir_blaster_entity"): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain="remote")
+                ),
+            }
+        )
 
         return self.async_show_form(step_id="device", data_schema=schema)
 
@@ -50,7 +62,7 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """IR codes configuration step."""
         if user_input is not None:
             data = {**self.config_data, "ir_codes": user_input}
-            
+
             await self.async_set_unique_id(
                 f"{DOMAIN}_{data['name'].lower().replace(' ', '_')}"
             )
@@ -75,7 +87,8 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="ir_codes",
             data_schema=vol.Schema(schema_dict),
             description_placeholders={
-                "info": "Paste base64-encoded IR codes from Broadlink app or Home Assistant learning"
+                "info": "Paste base64-encoded IR codes from Broadlink app or "
+                "Home Assistant learning"
             },
         )
 
@@ -100,11 +113,13 @@ class DysonIROptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        options_schema = vol.Schema({
-            vol.Optional(
-                "update_interval",
-                default=self.config_entry.options.get("update_interval", 300),
-            ): int,
-        })
+        options_schema = vol.Schema(
+            {
+                vol.Optional(
+                    "update_interval",
+                    default=self.config_entry.options.get("update_interval", 300),
+                ): int,
+            }
+        )
 
         return self.async_show_form(step_id="init", data_schema=options_schema)

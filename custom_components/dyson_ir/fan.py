@@ -3,11 +3,18 @@ import logging
 from typing import Any
 
 from homeassistant.components.fan import FanEntity, FanEntityFeature
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.config_entries import ConfigEntry
 
-from .const import DOMAIN, IR_CODE_HEAT_OFF, IR_CODE_HEAT_ON, IR_CODE_OSCILLATE, IR_CODE_POWER_OFF, IR_CODE_POWER_ON, IR_CODE_SPEED_DOWN, IR_CODE_SPEED_UP, SPEED_HIGH, SPEED_LOW, SPEED_MEDIUM, SPEED_OFF
+from .const import (
+    DOMAIN,
+    IR_CODE_OSCILLATE,
+    IR_CODE_POWER_OFF,
+    IR_CODE_POWER_ON,
+    IR_CODE_SPEED_DOWN,
+    IR_CODE_SPEED_UP,
+)
 from .coordinator import DysonIRCoordinator
 from .entity import DysonIREntity
 

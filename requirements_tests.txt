@@ -6,3 +6,5 @@ pylint
 pytest
 pytest-cov
 coveralls
+pre-commit
+commitizen
