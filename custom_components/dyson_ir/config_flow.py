@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import selector
 
 from .const import (
@@ -55,19 +56,61 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_blaster(
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """Step 2: IR Blaster Selection."""
+        """Step 2a: IR Blaster Device Selection."""
+        if user_input is not None:
+            self.config_data.update(user_input)
+            return await self.async_step_blaster_action()
+
+        schema = vol.Schema({vol.Required(CONF_DEVICE_ID): selector.DeviceSelector()})
+
+        return self.async_show_form(step_id="blaster", data_schema=schema)
+
+    async def async_step_blaster_action(
+        self, user_input: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Step 2b: IR Blaster Action Selection."""
         if user_input is not None:
             self.config_data.update(user_input)
             return await self.async_step_actions()
 
+        # Fetch available services for the selected device
+        ent_reg = er.async_get(self.hass)
+        device_id = self.config_data[CONF_DEVICE_ID]
+        entities = er.async_entries_for_device(ent_reg, device_id)
+
+        # Determine relevant domains based on device's entities
+        domains = {entity.domain for entity in entities}
+
+        services = self.hass.services.async_services()
+        options = []
+        for domain, domain_services in services.items():
+            if not domains or domain in domains:
+                for service_name in domain_services:
+                    full_action = f"{domain}.{service_name}"
+                    options.append({"label": full_action, "value": full_action})
+
+        # Sort options for better UX
+        options.sort(key=lambda x: x["label"])
+
+        # Default to remote.send_command only if it exists in options
+        default_action = "remote.send_command"
+        if options and default_action not in [o["value"] for o in options]:
+            default_action = options[0]["value"]
+
         schema = vol.Schema(
             {
-                vol.Required(CONF_DEVICE_ID): selector.DeviceSelector(),
-                vol.Required(CONF_BLASTER_ACTION, default="remote.send_command"): str,
+                vol.Required(
+                    CONF_BLASTER_ACTION, default=default_action
+                ): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=options,
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                ),
             }
         )
 
-        return self.async_show_form(step_id="blaster", data_schema=schema)
+        return self.async_show_form(step_id="blaster_action", data_schema=schema)
 
     async def async_step_actions(
         self, user_input: Optional[Dict[str, Any]] = None

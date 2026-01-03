@@ -29,16 +29,22 @@ async def test_full_config_flow(hass: HomeAssistant):
         user_input={"name": "Test Fan", CONF_DEVICE_TYPE: DEVICE_TYPE_FAN},
     )
 
-    # Step 2: Blaster
+    # Step 2a: Blaster Device
     assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
     assert result["step_id"] == "blaster"
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
-        user_input={
-            CONF_DEVICE_ID: "blaster_device_id",
-            CONF_BLASTER_ACTION: "remote.send_command",
-        },
+        user_input={CONF_DEVICE_ID: "blaster_device_id"},
+    )
+
+    # Step 2b: Blaster Action
+    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert result["step_id"] == "blaster_action"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={CONF_BLASTER_ACTION: "remote.send_command"},
     )
 
     # Step 3: Actions List (Initially empty, want to add one)
@@ -94,10 +100,11 @@ async def test_no_actions_error(hass: HomeAssistant):
     )
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
-        user_input={
-            CONF_DEVICE_ID: "test_device",
-            CONF_BLASTER_ACTION: "remote.send_command",
-        },
+        user_input={CONF_DEVICE_ID: "test_device"},
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={CONF_BLASTER_ACTION: "remote.send_command"},
     )
 
     # Try to finish without adding any actions

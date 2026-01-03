@@ -10,16 +10,26 @@
         }
       },
       "blaster": {
-        "title": "IR Blaster Configuration",
-        "description": "Select the IR blaster device and the action to send IR codes",
+        "title": "Select IR Blaster Device",
+        "description": "Choose the device that will be used as the IR blaster",
         "data": {
-          "device_id": "IR Blaster Device",
+          "device_id": "Device"
+        }
+      },
+      "blaster_action": {
+        "title": "Select Blaster Action",
+        "description": "Choose the service action used to send IR codes for this device",
+        "data": {
           "blaster_action": "Action"
         }
       },
       "actions": {
         "title": "Actions List",
-        "description": "Configure the actions/commands for your device. You must have at least one action."
+        "description": "Configure the actions/commands for your device. You must have at least one action.\n\nCurrently added actions:\n{actions}",
+        "data": {
+          "add_more": "Add more actions?",
+          "remove_action": "Remove an action"
+        }
       },
       "add_action": {
         "title": "Add New Action",
