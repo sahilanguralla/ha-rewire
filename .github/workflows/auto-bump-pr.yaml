@@ -28,25 +28,34 @@ jobs:
 
       - name: Configure Git User
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "Raven"
+          git config user.email "raven[bot]@users.noreply.github.com"
 
-      - name: Check for Version Bump
-        id: check_bump
+      - name: Bump version
+        id: cz_bump
         run: |
-          # Check if a bump is needed based on commits in this PR
-          # We compare against the base branch (main)
-          cz bump --dry-run --yes --increment-mode exact
-        continue-on-error: true
+          # Get current version
+          CURRENT_VERSION=$(cz version --project)
 
-      - name: Perform Bump and Commit
-        if: steps.check_bump.outcome == 'success'
-        run: |
-          # Perform the actual bump, modifying files
-          cz bump --yes --files-only
+          # Find merge base
+          git fetch origin ${{ github.base_ref }}
+          MERGE_BASE=$(git merge-base origin/${{ github.base_ref }} HEAD)
 
-          # Find all manifest.json files in custom_components and add them
-          find custom_components -name "manifest.json" -type f | xargs git add
-          git add pyproject.toml
-          git commit -m "ci: bump version [skip ci]" || echo "No changes to commit"
-          git push
+          # Temporarily tag the merge base so commitizen only looks at PR commits
+          git tag $CURRENT_VERSION $MERGE_BASE
+
+          # Check if a bump is needed and perform it (files only)
+          if cz bump --yes --files-only --increment-mode exact; then
+            echo "bumped=true" >> $GITHUB_OUTPUT
+
+            # Find all manifest.json files in custom_components and add them
+            find custom_components -name "manifest.json" -type f | xargs git add
+            git add pyproject.toml
+            git commit -m "ci: bump version [skip ci]" || echo "No changes to commit"
+            git push
+          else
+            echo "bumped=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Cleanup temp tag
+          git tag -d $CURRENT_VERSION
