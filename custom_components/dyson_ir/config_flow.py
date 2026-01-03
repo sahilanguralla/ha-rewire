@@ -8,15 +8,14 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
+    CONF_ACTION_CODE,
+    CONF_ACTION_NAME,
+    CONF_ACTIONS,
+    CONF_DEVICE_TYPE,
+    CONF_IR_BLASTER,
+    DEVICE_TYPE_FAN,
     DEVICE_TYPES,
     DOMAIN,
-    IR_CODE_HEAT_OFF,
-    IR_CODE_HEAT_ON,
-    IR_CODE_OSCILLATE,
-    IR_CODE_POWER_OFF,
-    IR_CODE_POWER_ON,
-    IR_CODE_SPEED_DOWN,
-    IR_CODE_SPEED_UP,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -25,72 +24,124 @@ _LOGGER = logging.getLogger(__name__)
 class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle config flow for Dyson IR."""
 
-    VERSION = 1
+    VERSION = 2
+
+    def __init__(self) -> None:
+        """Initialize config flow."""
+        self.config_data: Dict[str, Any] = {}
+        self.actions: list[Dict[str, str]] = []
 
     async def async_step_user(
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """Initial user step - select IR blaster device."""
+        """Step 1: Device Name and Type."""
+        errors = {}
         if user_input is not None:
-            return await self.async_step_device()
-
-        return self.async_show_form(step_id="user", data_schema=vol.Schema({}))
-
-    async def async_step_device(
-        self, user_input: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        """Device configuration step."""
-        if user_input is not None:
-            self.config_data = user_input
-            return await self.async_step_ir_codes()
+            self.config_data.update(user_input)
+            return await self.async_step_blaster()
 
         schema = vol.Schema(
             {
-                vol.Required("name", default="Dyson Fan"): str,
-                vol.Required("device_type", default="AM09"): vol.In(DEVICE_TYPES),
-                vol.Required("ir_blaster_entity"): selector.EntitySelector(
+                vol.Required("name", default="My Device"): str,
+                vol.Required(CONF_DEVICE_TYPE, default=DEVICE_TYPE_FAN): vol.In(
+                    DEVICE_TYPES
+                ),
+            }
+        )
+
+        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
+
+    async def async_step_blaster(
+        self, user_input: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Step 2: IR Blaster Selection."""
+        if user_input is not None:
+            self.config_data.update(user_input)
+            return await self.async_step_actions()
+
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_IR_BLASTER): selector.EntitySelector(
                     selector.EntitySelectorConfig(domain="remote")
                 ),
             }
         )
 
-        return self.async_show_form(step_id="device", data_schema=schema)
+        return self.async_show_form(step_id="blaster", data_schema=schema)
 
-    async def async_step_ir_codes(
+    async def async_step_actions(
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """IR codes configuration step."""
+        """Step 3: Actions List Management."""
+        errors = {}
         if user_input is not None:
-            data = {**self.config_data, "ir_codes": user_input}
+            # Handle removal first
+            if remove_name := user_input.get("remove_action"):
+                self.actions = [
+                    a for a in self.actions if a[CONF_ACTION_NAME] != remove_name
+                ]
+                # Return the form again to show updated list
+                return await self.async_step_actions()
 
-            await self.async_set_unique_id(
-                f"{DOMAIN}_{data['name'].lower().replace(' ', '_')}"
-            )
-            self._abort_if_unique_id_configured()
+            if user_input.get("add_more"):
+                return await self.async_step_add_action()
 
-            return self.async_create_entry(title=data["name"], data=data)
+            if not self.actions:
+                errors["base"] = "no_actions"
+            else:
+                self.config_data[CONF_ACTIONS] = self.actions
+                return self.async_create_entry(
+                    title=self.config_data["name"], data=self.config_data
+                )
+
+        # Build description with current actions
+        actions_str = (
+            "\n".join([f"- {a[CONF_ACTION_NAME]}" for a in self.actions])
+            if self.actions
+            else "No actions added yet."
+        )
 
         schema_dict = {
-            vol.Required(IR_CODE_POWER_ON): str,
-            vol.Required(IR_CODE_POWER_OFF): str,
-            vol.Required(IR_CODE_SPEED_UP): str,
-            vol.Required(IR_CODE_SPEED_DOWN): str,
-            vol.Required(IR_CODE_OSCILLATE): str,
+            vol.Optional("add_more", default=not bool(self.actions)): bool,
         }
 
-        # Heat codes optional for AM09
-        if self.config_data.get("device_type") == "AM09":
-            schema_dict[vol.Optional(IR_CODE_HEAT_ON, default="")] = str
-            schema_dict[vol.Optional(IR_CODE_HEAT_OFF, default="")] = str
+        if self.actions:
+            schema_dict[vol.Optional("remove_action")] = selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=[
+                        {
+                            "label": f"Delete {a[CONF_ACTION_NAME]}",
+                            "value": a[CONF_ACTION_NAME],
+                        }
+                        for a in self.actions
+                    ],
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            )
 
         return self.async_show_form(
-            step_id="ir_codes",
+            step_id="actions",
             data_schema=vol.Schema(schema_dict),
-            description_placeholders={
-                "info": "Paste base64-encoded IR codes from Broadlink app or "
-                "Home Assistant learning"
-            },
+            description_placeholders={"actions": actions_str},
+            errors=errors,
         )
+
+    async def async_step_add_action(
+        self, user_input: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Sub-step to add a single action."""
+        if user_input is not None:
+            self.actions.append(user_input)
+            return await self.async_step_actions()
+
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_ACTION_NAME): str,
+                vol.Required(CONF_ACTION_CODE): str,
+            }
+        )
+
+        return self.async_show_form(step_id="add_action", data_schema=schema)
 
     @staticmethod
     @callback

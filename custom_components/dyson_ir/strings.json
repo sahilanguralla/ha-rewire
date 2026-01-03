@@ -1,47 +1,49 @@
 {
-    "config": {
-      "step": {
-        "user": {
-          "title": "Dyson IR Control Setup",
-          "description": "Configure your Dyson fan/heater control via IR blaster"
-        },
-        "device": {
-          "title": "Device Configuration",
-          "data": {
-            "name": "Device Name",
-            "device_type": "Device Type",
-            "ir_blaster_entity": "IR Blaster Entity ID (e.g., broadlink.living_room)"
-          }
-        },
-        "ir_codes": {
-          "title": "IR Code Configuration",
-          "description": "Paste base64-encoded IR codes from your Broadlink device",
-          "data": {
-            "power_on": "Power On Code",
-            "power_off": "Power Off Code",
-            "speed_up": "Speed Up Code",
-            "speed_down": "Speed Down Code",
-            "oscillate_toggle": "Oscillate Toggle Code",
-            "heat_on": "Heat On Code (AM09 only)",
-            "heat_off": "Heat Off Code (AM09 only)"
-          }
+  "config": {
+    "step": {
+      "user": {
+        "title": "Device Setup",
+        "description": "Configure your IR-controlled device",
+        "data": {
+          "name": "Device name",
+          "device_type": "Device type"
         }
       },
-      "error": {
-        "invalid_ir_code": "Invalid IR code format"
+      "blaster": {
+        "title": "IR Blaster Configuration",
+        "description": "Select the IR blaster that will control this device",
+        "data": {
+          "ir_blaster_entity": "IR Blaster entity"
+        }
       },
-      "abort": {
-        "already_configured": "Device is already configured"
+      "actions": {
+        "title": "Actions List",
+        "description": "Configure the actions/commands for your device. You must have at least one action."
+      },
+      "add_action": {
+        "title": "Add New Action",
+        "data": {
+          "name": "Action name (e.g., Power On)",
+          "ir_code": "IR Code (Base64)"
+        }
       }
     },
-    "options": {
-      "step": {
-        "init": {
-          "title": "Dyson IR Options",
-          "data": {
-            "update_interval": "Coordinator Update Interval (seconds)"
-          }
+    "error": {
+      "invalid_ir_code": "Invalid IR code format",
+      "no_actions": "At least one action is required"
+    },
+    "abort": {
+      "already_configured": "Device is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Dyson IR Options",
+        "data": {
+          "update_interval": "Coordinator Update Interval (seconds)"
         }
       }
     }
   }
+}

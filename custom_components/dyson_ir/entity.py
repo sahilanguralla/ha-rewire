@@ -20,8 +20,7 @@ class DysonIREntity(CoordinatorEntity[DysonIRCoordinator], Entity):
         """Return device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, self.entry_id)},
-            name=self.coordinator.config_entry.data.get("name", "Dyson Fan"),
-            manufacturer="Dyson",
-            model=self.coordinator.config_entry.data.get("device_type", "AM09"),
-            via_device=(DOMAIN, self.entry_id),
+            name=self.coordinator.config_entry.data.get("name", "IR Device"),
+            manufacturer="IR Remote Control",
+            model=self.coordinator.config_entry.data.get("device_type", "Generic"),
         )

@@ -3,20 +3,18 @@ DOMAIN = "dyson_ir"
 PLATFORMS = ["fan"]
 
 # Device types
-DEVICE_TYPE_AM09 = "AM09"
-DEVICE_TYPE_AM07 = "AM07"
-DEVICE_TYPE_AM11 = "AM11"
+DEVICE_TYPE_FAN = "fan"
+DEVICE_TYPE_LIGHT = "light"
+DEVICE_TYPE_AC = "ac"
 
-DEVICE_TYPES = [DEVICE_TYPE_AM09, DEVICE_TYPE_AM07, DEVICE_TYPE_AM11]
+DEVICE_TYPES = [DEVICE_TYPE_FAN, DEVICE_TYPE_LIGHT, DEVICE_TYPE_AC]
 
-# IR Code keys
-IR_CODE_POWER_ON = "power_on"
-IR_CODE_POWER_OFF = "power_off"
-IR_CODE_SPEED_UP = "speed_up"
-IR_CODE_SPEED_DOWN = "speed_down"
-IR_CODE_OSCILLATE = "oscillate_toggle"
-IR_CODE_HEAT_ON = "heat_on"
-IR_CODE_HEAT_OFF = "heat_off"
+# Configuration keys
+CONF_ACTIONS = "actions"
+CONF_ACTION_NAME = "name"
+CONF_ACTION_CODE = "ir_code"
+CONF_IR_BLASTER = "ir_blaster_entity"
+CONF_DEVICE_TYPE = "device_type"
 
 # Speed settings
 SPEED_OFF = 0

@@ -8,12 +8,11 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
+    CONF_ACTION_CODE,
+    CONF_ACTION_NAME,
+    CONF_ACTIONS,
+    CONF_IR_BLASTER,
     DOMAIN,
-    IR_CODE_OSCILLATE,
-    IR_CODE_POWER_OFF,
-    IR_CODE_POWER_ON,
-    IR_CODE_SPEED_DOWN,
-    IR_CODE_SPEED_UP,
 )
 from .coordinator import DysonIRCoordinator
 from .entity import DysonIREntity
@@ -48,10 +47,11 @@ class DysonFan(DysonIREntity, FanEntity):
     def __init__(self, coordinator: DysonIRCoordinator, entry_id: str) -> None:
         """Initialize fan."""
         super().__init__(coordinator, entry_id)
-        self._attr_name = f"Dyson {coordinator.config_entry.data.get('device_type')}"
+        config_data = coordinator.config_entry.data
+        self._attr_name = config_data.get("name", "Dyson Fan")
         self._attr_unique_id = f"{DOMAIN}_fan_{entry_id}"
-        self._ir_codes = coordinator.config_entry.data.get("ir_codes", {})
-        self._blaster_entity = coordinator.config_entry.data.get("ir_blaster_entity")
+        self._actions = config_data.get(CONF_ACTIONS, [])
+        self._blaster_entity = config_data.get(CONF_IR_BLASTER)
 
     @property
     def is_on(self) -> bool:
@@ -96,7 +96,7 @@ class DysonFan(DysonIREntity, FanEntity):
         **kwargs: Any,
     ) -> None:
         """Turn on fan."""
-        await self._send_ir_code(IR_CODE_POWER_ON)
+        await self._send_action("Power On")
         self.coordinator.set_device_state({"power": True})
 
         if preset_mode:
@@ -104,7 +104,7 @@ class DysonFan(DysonIREntity, FanEntity):
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off fan."""
-        await self._send_ir_code(IR_CODE_POWER_OFF)
+        await self._send_action("Power Off")
         self.coordinator.set_device_state({"power": False, "speed": 0})
 
     async def async_set_percentage(self, percentage: int) -> None:
@@ -128,7 +128,7 @@ class DysonFan(DysonIREntity, FanEntity):
 
     async def async_oscillate(self, oscillating: bool) -> None:
         """Oscillate fan."""
-        await self._send_ir_code(IR_CODE_OSCILLATE)
+        await self._send_action("Oscillate")
         self.coordinator.set_device_state({"oscillating": oscillating})
 
     async def _set_speed_for_percentage(self, percentage: int) -> None:
@@ -144,24 +144,25 @@ class DysonFan(DysonIREntity, FanEntity):
             # Speed up
             steps = (target_speed - current) // 33
             for _ in range(steps):
-                await self._send_ir_code(IR_CODE_SPEED_UP)
+                await self._send_action("Speed Up")
         elif current > target_speed:
             # Speed down
             steps = (current - target_speed) // 33
             for _ in range(steps):
-                await self._send_ir_code(IR_CODE_SPEED_DOWN)
+                await self._send_action("Speed Down")
 
         self.coordinator.set_device_state({"speed": percentage})
 
-    async def _send_ir_code(self, code_key: str) -> None:
-        """Send IR code via blaster."""
-        if code_key not in self._ir_codes:
-            _LOGGER.warning(f"IR code not configured for {code_key}")
-            return
+    async def _send_action(self, action_name: str) -> None:
+        """Send IR code for a specific action name."""
+        ir_code = None
+        for action in self._actions:
+            if action[CONF_ACTION_NAME].lower() == action_name.lower():
+                ir_code = action[CONF_ACTION_CODE]
+                break
 
-        ir_code = self._ir_codes[code_key]
         if not ir_code:
-            _LOGGER.warning(f"IR code is empty for {code_key}")
+            _LOGGER.warning(f"Action '{action_name}' not configured")
             return
 
         try:
@@ -174,6 +175,6 @@ class DysonFan(DysonIREntity, FanEntity):
                     "command": [ir_code],
                 },
             )
-            _LOGGER.debug(f"Sent IR code for {code_key}")
+            _LOGGER.debug(f"Sent IR code for action: {action_name}")
         except Exception as err:
-            _LOGGER.error(f"Failed to send IR code {code_key}: {err}")
+            _LOGGER.error(f"Failed to send IR code for action {action_name}: {err}")
