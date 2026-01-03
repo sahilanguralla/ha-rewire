@@ -13,7 +13,8 @@ DEVICE_TYPES = [DEVICE_TYPE_FAN, DEVICE_TYPE_LIGHT, DEVICE_TYPE_AC]
 CONF_ACTIONS = "actions"
 CONF_ACTION_NAME = "name"
 CONF_ACTION_CODE = "ir_code"
-CONF_IR_BLASTER = "ir_blaster_entity"
+CONF_DEVICE_ID = "device_id"
+CONF_BLASTER_ACTION = "blaster_action"
 CONF_DEVICE_TYPE = "device_type"
 
 # Speed settings
