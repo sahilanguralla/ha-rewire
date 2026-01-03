@@ -1,12 +1,17 @@
 {
     "domain": "dyson_ir",
     "name": "Dyson IR",
-    "codeowners": [],
+    "codeowners": [
+        "@sahilanguralla"
+    ],
     "config_flow": true,
     "dependencies": [],
     "documentation": "https://github.com/sahilanguralla/hacs/blob/main/README.md",
+    "homekit": {},
     "iot_class": "local_polling",
     "issue_tracker": "https://github.com/sahilanguralla/hacs/issues",
     "requirements": [],
-    "version": "0.0.1"
+    "ssdp": [],
+    "version": "0.1.0",
+    "zeroconf": []
 }
