@@ -11,9 +11,10 @@
       },
       "blaster": {
         "title": "IR Blaster Configuration",
-        "description": "Select the IR blaster that will control this device",
+        "description": "Select the IR blaster device and the action to send IR codes",
         "data": {
-          "ir_blaster_entity": "IR Blaster entity"
+          "device_id": "IR Blaster Device",
+          "blaster_action": "Action"
         }
       },
       "actions": {

@@ -11,7 +11,8 @@ from .const import (
     CONF_ACTION_CODE,
     CONF_ACTION_NAME,
     CONF_ACTIONS,
-    CONF_IR_BLASTER,
+    CONF_BLASTER_ACTION,
+    CONF_DEVICE_ID,
     DOMAIN,
 )
 from .coordinator import DysonIRCoordinator
@@ -51,7 +52,8 @@ class DysonFan(DysonIREntity, FanEntity):
         self._attr_name = config_data.get("name", "Dyson Fan")
         self._attr_unique_id = f"{DOMAIN}_fan_{entry_id}"
         self._actions = config_data.get(CONF_ACTIONS, [])
-        self._blaster_entity = config_data.get(CONF_IR_BLASTER)
+        self._device_id = config_data.get(CONF_DEVICE_ID)
+        self._blaster_action = config_data.get(CONF_BLASTER_ACTION)
 
     @property
     def is_on(self) -> bool:
@@ -165,13 +167,19 @@ class DysonFan(DysonIREntity, FanEntity):
             _LOGGER.warning(f"Action '{action_name}' not configured")
             return
 
+        if not self._blaster_action or "." not in self._blaster_action:
+            _LOGGER.error(f"Invalid blaster action: {self._blaster_action}")
+            return
+
+        domain, service = self._blaster_action.split(".", 1)
+
         try:
-            # Call remote service to send IR code
+            # Call the custom blaster action
             await self.hass.services.async_call(
-                "remote",
-                "send_command",
+                domain,
+                service,
                 {
-                    "entity_id": self._blaster_entity,
+                    "device_id": self._device_id,
                     "command": [ir_code],
                 },
             )

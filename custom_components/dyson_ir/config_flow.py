@@ -11,8 +11,9 @@ from .const import (
     CONF_ACTION_CODE,
     CONF_ACTION_NAME,
     CONF_ACTIONS,
+    CONF_BLASTER_ACTION,
+    CONF_DEVICE_ID,
     CONF_DEVICE_TYPE,
-    CONF_IR_BLASTER,
     DEVICE_TYPE_FAN,
     DEVICE_TYPES,
     DOMAIN,
@@ -61,9 +62,8 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         schema = vol.Schema(
             {
-                vol.Required(CONF_IR_BLASTER): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain="remote")
-                ),
+                vol.Required(CONF_DEVICE_ID): selector.DeviceSelector(),
+                vol.Required(CONF_BLASTER_ACTION, default="remote.send_command"): str,
             }
         )
 
