@@ -38,7 +38,7 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = {}
         if user_input is not None:
             self.config_data.update(user_input)
-            return await self.async_step_blaster()
+            return await self.async_step_blaster_device()
 
         schema = vol.Schema(
             {
@@ -51,21 +51,98 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
-    async def async_step_blaster(
+    async def async_step_blaster_device(
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """Step 2: Configure Blaster Action (using ActionSelector)."""
+        """Step 2: Select Blaster Device."""
         if user_input is not None:
             self.config_data.update(user_input)
-            return await self.async_step_actions()
+            return await self.async_step_blaster_action()
 
         schema = vol.Schema(
             {
-                vol.Required(CONF_BLASTER_ACTION): selector.ActionSelector(),
+                vol.Required("blaster_device_id"): selector.DeviceSelector(),
             }
         )
 
-        return self.async_show_form(step_id="blaster", data_schema=schema)
+        return self.async_show_form(step_id="blaster_device", data_schema=schema)
+
+    async def async_step_blaster_action(
+        self, user_input: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Step 3: Select Blaster Action (Service)."""
+        errors = {}
+        if user_input is not None:
+            # Construct the action dict
+            service_string = user_input["service"]
+            domain, service_name = service_string.split(".", 1)
+
+            target_field = "command"  # Default
+            if domain == "mqtt":
+                target_field = "payload"
+            elif domain in ("text", "number", "input_text", "input_number"):
+                target_field = "value"
+
+            # Action config with injected IR_CODE placeholder
+            action_config = {
+                "service": service_string,
+                "target": {"device_id": self.config_data["blaster_device_id"]},
+                "data": {target_field: "IR_CODE"},
+            }
+
+            # Wrap in list as ActionSelector typically returns a list of actions
+            self.config_data[CONF_BLASTER_ACTION] = [action_config]
+
+            return await self.async_step_actions()
+
+        # Get device info to find available services
+        device_id = self.config_data["blaster_device_id"]
+
+        from homeassistant.helpers import device_registry as dr
+
+        device_registry = dr.async_get(self.hass)
+        device = device_registry.async_get(device_id)
+
+        options = []
+        if device:
+            # Get domains from config entries
+            domains = set()
+            for entry_id in device.config_entries:
+                if entry := self.hass.config_entries.async_get_entry(entry_id):
+                    domains.add(entry.domain)
+
+            # Also generic domains that might apply
+            domains.add("remote")
+
+            # List services for these domains
+            all_services = self.hass.services.async_services()
+            for domain in domains:
+                if domain_services := all_services.get(domain):
+                    for service_name in domain_services:
+                        full_service = f"{domain}.{service_name}"
+                        options.append({"label": full_service, "value": full_service})
+
+        if not options:
+            options.append(
+                {"label": "remote.send_command", "value": "remote.send_command"}
+            )
+
+        # Sort options
+        options.sort(key=lambda x: x["label"])
+
+        schema = vol.Schema(
+            {
+                vol.Required("service"): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=options, mode=selector.SelectSelectorMode.DROPDOWN
+                    )
+                )
+            }
+        )
+
+        return self.async_show_form(
+            step_id="blaster_action", data_schema=schema, errors=errors
+        )
 
     async def async_step_actions(
         self, user_input: Optional[Dict[str, Any]] = None
