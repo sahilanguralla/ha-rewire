@@ -62,6 +62,9 @@ class DysonIRButton(DysonIREntity, ButtonEntity):
 
     async def async_press(self) -> None:
         """Handle the button press."""
+        _LOGGER.debug(
+            "Button pressed: %s. Blaster actions: %s", self.name, self._blaster_actions
+        )
         if not self._blaster_actions:
             _LOGGER.error("No blaster actions configured")
             return
@@ -86,6 +89,7 @@ class DysonIRButton(DysonIREntity, ButtonEntity):
                             if key == "command"
                             else self._action_code
                         )
+                        _LOGGER.debug("Injected IR code into %s: %s", key, obj[key])
                     elif isinstance(value, (dict, list)):
                         inject_code(value)
             elif isinstance(obj, list):
@@ -93,6 +97,8 @@ class DysonIRButton(DysonIREntity, ButtonEntity):
                     inject_code(item)
 
         inject_code(actions)
+
+        _LOGGER.debug("Blaster actions to execute after injection: %s", actions)
 
         try:
             script_obj = script.Script(

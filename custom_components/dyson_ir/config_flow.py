@@ -89,6 +89,7 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 "target": {"device_id": self.config_data["blaster_device_id"]},
                 "data": {target_field: "IR_CODE"},
             }
+            _LOGGER.debug("Constructed blaster action config: %s", action_config)
 
             # Wrap in list as ActionSelector typically returns a list of actions
             self.config_data[CONF_BLASTER_ACTION] = [action_config]
@@ -102,6 +103,9 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         device_registry = dr.async_get(self.hass)
         device = device_registry.async_get(device_id)
+        _LOGGER.debug(
+            "Looking for services for device %s (registry entry: %s)", device_id, device
+        )
 
         options = []
         if device:
@@ -116,6 +120,7 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             # List services for these domains
             all_services = self.hass.services.async_services()
+            _LOGGER.debug("Scanning domains %s for services", domains)
             for domain in domains:
                 if domain_services := all_services.get(domain):
                     for service_name in domain_services:
