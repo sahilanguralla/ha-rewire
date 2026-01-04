@@ -1,0 +1,55 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Device is already configured"
+        },
+        "error": {
+            "invalid_ir_code": "Invalid IR code format",
+            "no_actions": "At least one action is required"
+        },
+        "step": {
+            "actions": {
+                "data": {
+                    "add_more": "Add more actions?",
+                    "remove_action": "Remove an action"
+                },
+                "description": "Configure the actions/commands for your device. You must have at least one action.\n\nCurrently added actions:\n{actions}",
+                "title": "Actions List"
+            },
+            "add_action": {
+                "data": {
+                    "ir_code": "IR Code (Base64)",
+                    "name": "Action name (e.g., Power On)"
+                },
+                "title": "Add New Action"
+            },
+            "blaster": {
+                "data": {
+                    "blaster_action": "Action",
+                    "device_id": "IR Blaster Device"
+                },
+                "description": "Select the IR blaster device and the action to send IR codes",
+                "title": "IR Blaster Configuration"
+            },
+            "user": {
+                "data": {
+                    "device_type": "Device type",
+                    "name": "Device name"
+                },
+                "description": "Configure your IR-controlled device",
+                "title": "Device Setup"
+            }
+        },
+        "title": "Dyson IR"
+    },
+    "options": {
+        "step": {
+            "init": {
+                "data": {
+                    "update_interval": "Coordinator Update Interval (seconds)"
+                },
+                "title": "Dyson IR Options"
+            }
+        }
+    }
+}

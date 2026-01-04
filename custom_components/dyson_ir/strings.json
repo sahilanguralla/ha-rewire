@@ -1,5 +1,6 @@
 {
   "config": {
+    "title": "Dyson IR",
     "step": {
       "user": {
         "title": "Device Setup",
@@ -10,10 +11,11 @@
         }
       },
       "blaster": {
-        "title": "Configure Blaster",
-        "description": "Select the device and action used to send IR codes. IMPORTANT: Enter 'IR_CODE' (case-sensitive) in the field where the IR command should be injected.",
+        "title": "IR Blaster Configuration",
+        "description": "Select the IR blaster device and the action to send IR codes",
         "data": {
-          "blaster_action": "Blaster Action"
+          "device_id": "IR Blaster Device",
+          "blaster_action": "Action"
         }
       },
       "actions": {
