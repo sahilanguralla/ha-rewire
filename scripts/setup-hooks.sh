@@ -3,9 +3,16 @@
 
 echo "Installing git hooks..."
 
+# Locate pre-commit in venv if available
+GIT_ROOT=$(git rev-parse --show-toplevel)
+PRE_COMMIT_CMD="pre-commit"
+if [ -f "$GIT_ROOT/venv/bin/pre-commit" ]; then
+    PRE_COMMIT_CMD="$GIT_ROOT/venv/bin/pre-commit"
+fi
+
 # Install pre-commit hooks
-pre-commit install
-pre-commit install --hook-type commit-msg
+$PRE_COMMIT_CMD install
+$PRE_COMMIT_CMD install --hook-type commit-msg
 
 # Install prepare-commit-msg hook for interactive commit message generation
 cat > .git/hooks/prepare-commit-msg << 'EOF'
@@ -18,8 +25,12 @@ COMMIT_SOURCE=$2
 # Only run if no message is provided via -m flag
 if [ -z "$COMMIT_SOURCE" ]; then
     # Find Python with commitizen installed
+    GIT_ROOT=$(git rev-parse --show-toplevel)
+    # Check for venv python first
+    if [ -f "$GIT_ROOT/venv/bin/python" ]; then
+        PYTHON_CMD="$GIT_ROOT/venv/bin/python"
     # Try pyenv first, then fall back to system python3
-    if command -v pyenv &> /dev/null; then
+    elif command -v pyenv &> /dev/null; then
         PYTHON_CMD=$(pyenv which python3 2>/dev/null || python3 -c "import sys; print(sys.executable)")
     else
         PYTHON_CMD=$(python3 -c "import sys; print(sys.executable)")
