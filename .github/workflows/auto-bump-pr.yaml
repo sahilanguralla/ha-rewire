@@ -42,10 +42,11 @@ jobs:
           MERGE_BASE=$(git merge-base origin/${{ github.base_ref }} HEAD)
 
           # Temporarily tag the merge base so commitizen only looks at PR commits
-          git tag $CURRENT_VERSION $MERGE_BASE
+          TEMP_TAG="temp-${{ github.run_id }}-${CURRENT_VERSION}"
+          git tag $TEMP_TAG $MERGE_BASE
 
           # Check if a bump is needed and perform it (files only)
-          if cz bump --yes --files-only --increment-mode exact; then
+          if cz bump --yes --files-only --increment-mode exact --tag-format "temp-${{ github.run_id }}-\$version"; then
             echo "bumped=true" >> $GITHUB_OUTPUT
 
             # Find all manifest.json files in custom_components and add them
@@ -58,4 +59,4 @@ jobs:
           fi
 
           # Cleanup temp tag
-          git tag -d $CURRENT_VERSION
+          git tag -d $TEMP_TAG
