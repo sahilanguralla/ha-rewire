@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'custom_components/dyson_ir/manifest.json'
+      - 'custom_components/rewire/manifest.json'
 
 jobs:
   release:
@@ -21,7 +21,7 @@ jobs:
       - name: Get version
         id: get_version
         run: |
-          VERSION=$(jq -r '.version' custom_components/dyson_ir/manifest.json)
+          VERSION=$(jq -r '.version' custom_components/rewire/manifest.json)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Check if tag exists

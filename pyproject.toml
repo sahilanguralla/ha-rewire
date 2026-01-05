@@ -1,6 +1,6 @@
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.3.10"
+version = "0.3.11"
 version_files = [
     "custom_components/dyson_ir/manifest.json:version"
 ]
