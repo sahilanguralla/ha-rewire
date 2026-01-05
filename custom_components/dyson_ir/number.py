@@ -16,9 +16,12 @@ from .const import (
     CONF_ACTION_TYPE,
     CONF_ACTIONS,
     CONF_BLASTER_ACTION,
+    CONF_DEVICE_TYPE,
     CONF_MAX_VALUE,
     CONF_MIN_VALUE,
     CONF_STEP_VALUE,
+    DEVICE_TYPE_AC,
+    DEVICE_TYPE_FAN,
     DOMAIN,
 )
 from .coordinator import DysonIRCoordinator
@@ -36,10 +39,23 @@ async def async_setup_entry(
     coordinator: DysonIRCoordinator = hass.data[DOMAIN][config_entry.entry_id]
     actions = config_entry.data.get(CONF_ACTIONS, [])
 
+    device_type = config_entry.data.get(CONF_DEVICE_TYPE)
+
     entities = []
     for action in actions:
         if action.get(CONF_ACTION_TYPE) == ACTION_TYPE_INC_DEC:
-            entities.append(DysonIRNumber(coordinator, config_entry.entry_id, action))
+            name = action.get(CONF_ACTION_NAME, "").lower()
+            handled = False
+
+            if device_type == DEVICE_TYPE_FAN and "speed" in name:
+                handled = True
+            elif device_type == DEVICE_TYPE_AC and ("temp" in name or "climate" in name):
+                handled = True
+            elif device_type == "light" and "brightness" in name:
+                handled = True
+
+            if not handled:
+                entities.append(DysonIRNumber(coordinator, config_entry.entry_id, action))
 
     async_add_entities(entities)
 

@@ -1,6 +1,16 @@
 """Constants for Dyson IR."""
+from typing import Final
+
 DOMAIN = "dyson_ir"
-PLATFORMS = ["fan", "button", "switch", "number"]
+
+PLATFORMS: Final[list[str]] = [
+    "button",
+    "switch",
+    "number",
+    "fan",
+    "climate",
+    "light",
+]
 
 # Device types
 DEVICE_TYPE_FAN = "fan"
@@ -51,3 +61,21 @@ COORDINATOR_UPDATE_INTERVAL = 300
 ATTR_OSCILLATING = "oscillating"
 ATTR_SPEED = "speed"
 ATTR_MODE = "mode"
+
+# Template Config Keys
+CONF_POWER_ON_CODE = "power_on_code"
+CONF_POWER_OFF_CODE = "power_off_code"
+CONF_POWER_TOGGLE_CODE = "power_toggle_code"
+
+# Fan Specific
+CONF_OSCILLATE_CODE = "oscillate_code"
+CONF_SPEED_INC_CODE = "speed_inc_code"
+CONF_SPEED_DEC_CODE = "speed_dec_code"
+
+# Climate Specific
+CONF_TEMP_INC_CODE = "temp_inc_code"
+CONF_TEMP_DEC_CODE = "temp_dec_code"
+
+# Light Specific
+CONF_BRIGHTNESS_INC_CODE = "brightness_inc_code"
+CONF_BRIGHTNESS_DEC_CODE = "brightness_dec_code"

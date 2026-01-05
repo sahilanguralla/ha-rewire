@@ -17,6 +17,9 @@ from .const import (
     CONF_ACTION_TYPE,
     CONF_ACTIONS,
     CONF_BLASTER_ACTION,
+    CONF_DEVICE_TYPE,
+    DEVICE_TYPE_AC,
+    DEVICE_TYPE_FAN,
     DOMAIN,
 )
 from .coordinator import DysonIRCoordinator
@@ -34,9 +37,19 @@ async def async_setup_entry(
     coordinator: DysonIRCoordinator = hass.data[DOMAIN][config_entry.entry_id]
     actions = config_entry.data.get(CONF_ACTIONS, [])
 
+    device_type = config_entry.data.get(CONF_DEVICE_TYPE)
+
     entities = []
     for action in actions:
-        if action.get(CONF_ACTION_TYPE) in (ACTION_TYPE_POWER, ACTION_TYPE_TOGGLE):
+        action_type = action.get(CONF_ACTION_TYPE)
+
+        # Determine if action is already handled by the main device entity
+        handled = False
+        if device_type in (DEVICE_TYPE_FAN, DEVICE_TYPE_AC, "light"):
+            if action_type in (ACTION_TYPE_POWER, ACTION_TYPE_TOGGLE):
+                handled = True
+
+        if not handled and action_type in (ACTION_TYPE_POWER, ACTION_TYPE_TOGGLE):
             entities.append(DysonIRSwitch(coordinator, config_entry.entry_id, action))
 
     async_add_entities(entities)

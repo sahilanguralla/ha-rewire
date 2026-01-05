@@ -22,11 +22,22 @@ from .const import (
     CONF_ACTION_TYPE,
     CONF_ACTIONS,
     CONF_BLASTER_ACTION,
+    CONF_BRIGHTNESS_DEC_CODE,
+    CONF_BRIGHTNESS_INC_CODE,
     CONF_DEVICE_TYPE,
     CONF_MAX_VALUE,
     CONF_MIN_VALUE,
+    CONF_OSCILLATE_CODE,
+    CONF_POWER_OFF_CODE,
+    CONF_POWER_ON_CODE,
+    CONF_SPEED_DEC_CODE,
+    CONF_SPEED_INC_CODE,
     CONF_STEP_VALUE,
+    CONF_TEMP_DEC_CODE,
+    CONF_TEMP_INC_CODE,
+    DEVICE_TYPE_AC,
     DEVICE_TYPE_FAN,
+    DEVICE_TYPE_LIGHT,
     DEVICE_TYPES,
     DOMAIN,
 )
@@ -55,7 +66,7 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         schema = vol.Schema(
             {
                 vol.Required("name", default="My Device"): str,
-                vol.Required(CONF_DEVICE_TYPE, default=DEVICE_TYPE_FAN): vol.In(DEVICE_TYPES),
+                vol.Required(CONF_DEVICE_TYPE, default=DEVICE_TYPE_FAN): vol.In(DEVICE_TYPES + ["other"]),
             }
         )
 
@@ -79,60 +90,55 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Step 3: Select Blaster Entity/Action."""
         errors = {}
         if user_input is not None:
-            # Check if user selected an entity or a generic service (fallback)
+            # ... (Action config construction similar to before) ...
             selection = user_input["selection"]
-
-            # If selection looks like an entity_id (contains domain.name)
             if selection.startswith("text.") or selection.startswith("input_text."):
                 entity_id = selection
                 domain = entity_id.split(".", 1)[0]
                 service = f"{domain}.set_value"
-
                 action_config = {
                     "service": service,
                     "target": {"entity_id": entity_id},
                     "data": {"value": "IR_CODE"},
                 }
             else:
-                # Handle generic service selection (fallback or non-text domains if we add them back)
                 service_string = selection
                 domain = service_string.split(".", 1)[0]
-                target_field = "command"  # Default
+                target_field = "command"
                 if domain == "mqtt":
                     target_field = "payload"
-
                 action_config = {
                     "service": service_string,
                     "target": {"device_id": self.config_data["blaster_device_id"]},
                     "data": {target_field: "IR_CODE"},
                 }
 
-            _LOGGER.debug("Constructed blaster action config: %s", action_config)
             self.config_data[CONF_BLASTER_ACTION] = [action_config]
-            return await self.async_step_actions()
 
-        # Get device info and entities
+            # Route based on device type
+            device_type = self.config_data.get(CONF_DEVICE_TYPE)
+            if device_type == DEVICE_TYPE_FAN:
+                return await self.async_step_configure_fan()
+            elif device_type == DEVICE_TYPE_AC:
+                return await self.async_step_configure_climate()
+            elif device_type == DEVICE_TYPE_LIGHT:  # Assuming you added this constant
+                return await self.async_step_configure_light()
+            elif device_type == "light":  # Fallback if constant missing
+                return await self.async_step_configure_light()
+            else:
+                return await self.async_step_actions()
+
+        # ... (Device discovery logic same as before) ...
         device_id = self.config_data["blaster_device_id"]
         from homeassistant.helpers import entity_registry as er
 
-        # device_registry = dr.async_get(self.hass) # (Unused var)
-
         entity_registry = er.async_get(self.hass)
         device_entities = er.async_entries_for_device(entity_registry, device_id)
-
         options = []
-
-        # 1. Look for text/input_text entities (Primary Goal)
         text_entities = [e for e in device_entities if e.domain in ("text", "input_text")]
         for e in text_entities:
-            # Show Entity ID and Original Name if available
             label = f"{e.original_name or e.name or e.entity_id} ({e.entity_id})"
             options.append({"label": label, "value": e.entity_id})
-
-        # 2. If no text entities found, or just to be safe, list generic services for other domains?
-        # User requested "text based only", but if the device truly has none, we should maybe allow fallback?
-        # For now, let's strictly follow "text based only" preference if text entities exist.
-        # If None exist, let's look for others to avoid dead ends.
 
         if not options:
             domains = set(e.domain for e in device_entities)
@@ -159,14 +165,62 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(step_id="blaster_action", data_schema=schema, errors=errors)
 
+    async def async_step_configure_fan(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Configure Fan specific codes."""
+        if user_input is not None:
+            self.config_data.update(user_input)
+            return self.async_create_entry(title=self.config_data["name"], data=self.config_data)
+
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_POWER_ON_CODE): str,
+                vol.Required(CONF_POWER_OFF_CODE): str,
+                vol.Optional(CONF_OSCILLATE_CODE): str,
+                vol.Optional(CONF_SPEED_INC_CODE): str,
+                vol.Optional(CONF_SPEED_DEC_CODE): str,
+            }
+        )
+        return self.async_show_form(step_id="configure_fan", data_schema=schema)
+
+    async def async_step_configure_climate(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Configure Climate specific codes."""
+        if user_input is not None:
+            self.config_data.update(user_input)
+            return self.async_create_entry(title=self.config_data["name"], data=self.config_data)
+
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_POWER_ON_CODE): str,
+                vol.Required(CONF_POWER_OFF_CODE): str,
+                vol.Required(CONF_TEMP_INC_CODE): str,
+                vol.Required(CONF_TEMP_DEC_CODE): str,
+            }
+        )
+        return self.async_show_form(step_id="configure_climate", data_schema=schema)
+
+    async def async_step_configure_light(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Configure Light specific codes."""
+        if user_input is not None:
+            self.config_data.update(user_input)
+            return self.async_create_entry(title=self.config_data["name"], data=self.config_data)
+
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_POWER_ON_CODE): str,
+                vol.Required(CONF_POWER_OFF_CODE): str,
+                vol.Optional(CONF_BRIGHTNESS_INC_CODE): str,
+                vol.Optional(CONF_BRIGHTNESS_DEC_CODE): str,
+            }
+        )
+        return self.async_show_form(step_id="configure_light", data_schema=schema)
+
+    # Legacy / Other Actions Steps
     async def async_step_actions(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Step 3: Actions List Management."""
         errors = {}
         if user_input is not None:
-            # Handle removal first
             if remove_name := user_input.get("remove_action"):
                 self.actions = [a for a in self.actions if a[CONF_ACTION_NAME] != remove_name]
-                # Return the form again to show updated list
                 return await self.async_step_actions()
 
             if user_input.get("add_more"):
@@ -178,7 +232,6 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self.config_data[CONF_ACTIONS] = self.actions
                 return self.async_create_entry(title=self.config_data["name"], data=self.config_data)
 
-        # Build description with current actions
         actions_str = (
             "\n".join([f"- {a[CONF_ACTION_NAME]}" for a in self.actions]) if self.actions else "No actions added yet."
         )
@@ -191,11 +244,7 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             schema_dict[vol.Optional("remove_action")] = selector.SelectSelector(
                 selector.SelectSelectorConfig(
                     options=[
-                        {
-                            "label": f"Delete {a[CONF_ACTION_NAME]}",
-                            "value": a[CONF_ACTION_NAME],
-                        }
-                        for a in self.actions
+                        {"label": f"Delete {a[CONF_ACTION_NAME]}", "value": a[CONF_ACTION_NAME]} for a in self.actions
                     ],
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
@@ -212,7 +261,6 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Sub-step to add a single action: Select Type."""
         if user_input is not None:
             self.current_action_type = user_input[CONF_ACTION_TYPE]
-            # Check for existing Power action if type is Power
             if self.current_action_type == ACTION_TYPE_POWER:
                 for action in self.actions:
                     if action.get(CONF_ACTION_TYPE) == ACTION_TYPE_POWER:
@@ -240,12 +288,10 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_configure_action(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Configure the details for the selected action type."""
         if user_input is not None:
-            # Add action type to the input
             user_input[CONF_ACTION_TYPE] = self.current_action_type
             self.actions.append(user_input)
             return await self.async_step_actions()
 
-        # Dynamic Schema based on Type
         data_schema = {vol.Required(CONF_ACTION_NAME): str}
 
         if self.current_action_type == ACTION_TYPE_POWER:
@@ -254,22 +300,11 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required("separate_codes", default=True): bool,
                     vol.Optional(CONF_ACTION_CODE_ON): str,
                     vol.Optional(CONF_ACTION_CODE_OFF): str,
-                    vol.Optional(CONF_ACTION_CODE): str,  # For toggle-style power
+                    vol.Optional(CONF_ACTION_CODE): str,
                 }
             )
-            # Note: We can't easily do complex conditional validation (if separate=True then require on/off)
-            # inside a simple vol.Schema here without strict validation or error loops.
-            # Simplified approach: Ask user to fill relevant fields.
-            # Ideally we might split this into another step if we want strictness,
-            # but let's trust the user or improve schema later if needed.
-
         elif self.current_action_type == ACTION_TYPE_TOGGLE:
-            data_schema.update(
-                {
-                    vol.Required(CONF_ACTION_CODE): str,
-                }
-            )
-
+            data_schema.update({vol.Required(CONF_ACTION_CODE): str})
         elif self.current_action_type == ACTION_TYPE_INC_DEC:
             data_schema.update(
                 {
@@ -280,13 +315,8 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_ACTION_CODE_DEC): str,
                 }
             )
-
         elif self.current_action_type == ACTION_TYPE_BUTTON:
-            data_schema.update(
-                {
-                    vol.Required(CONF_ACTION_CODE): str,
-                }
-            )
+            data_schema.update({vol.Required(CONF_ACTION_CODE): str})
 
         return self.async_show_form(
             step_id="configure_action",
@@ -298,15 +328,11 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry: config_entries.ConfigEntry):
         """Get options flow."""
-        return DysonIROptionsFlow(config_entry)
+        return DysonIROptionsFlow()
 
 
 class DysonIROptionsFlow(config_entries.OptionsFlow):
     """Handle options flow for Dyson IR."""
-
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
 
     async def async_step_init(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Manage options."""
