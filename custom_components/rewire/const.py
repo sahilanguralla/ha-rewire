@@ -34,6 +34,8 @@ CONF_ACTION_CODE_DEC = "ir_code_dec"
 CONF_MIN_VALUE = "min_value"
 CONF_MAX_VALUE = "max_value"
 CONF_STEP_VALUE = "step_value"
+CONF_MIN_TEMP = "min_temp"
+CONF_MAX_TEMP = "max_temp"
 
 # Action Types
 ACTION_TYPE_BUTTON = "button"

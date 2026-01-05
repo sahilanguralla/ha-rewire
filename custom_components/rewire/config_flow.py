@@ -4,6 +4,7 @@ from typing import Any, Dict, Optional
 
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.const import UnitOfTemperature
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
@@ -25,7 +26,9 @@ from .const import (
     CONF_BRIGHTNESS_DEC_CODE,
     CONF_BRIGHTNESS_INC_CODE,
     CONF_DEVICE_TYPE,
+    CONF_MAX_TEMP,
     CONF_MAX_VALUE,
+    CONF_MIN_TEMP,
     CONF_MIN_VALUE,
     CONF_OSCILLATE_CODE,
     CONF_POWER_OFF_CODE,
@@ -188,12 +191,29 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self.config_data.update(user_input)
             return self.async_create_entry(title=self.config_data["name"], data=self.config_data)
 
+        default_min = 16 if self.hass.config.units.temperature_unit == UnitOfTemperature.CELSIUS else 60
+        default_max = 30 if self.hass.config.units.temperature_unit == UnitOfTemperature.CELSIUS else 86
+
         schema = vol.Schema(
             {
                 vol.Required(CONF_POWER_ON_CODE): str,
                 vol.Required(CONF_POWER_OFF_CODE): str,
                 vol.Required(CONF_TEMP_INC_CODE): str,
                 vol.Required(CONF_TEMP_DEC_CODE): str,
+                vol.Required(CONF_MIN_TEMP, default=default_min): selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        mode=selector.NumberSelectorMode.BOX,
+                        unit_of_measurement=self.hass.config.units.temperature_unit,
+                        step=1,
+                    )
+                ),
+                vol.Required(CONF_MAX_TEMP, default=default_max): selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        mode=selector.NumberSelectorMode.BOX,
+                        unit_of_measurement=self.hass.config.units.temperature_unit,
+                        step=1,
+                    )
+                ),
             }
         )
         return self.async_show_form(step_id="configure_climate", data_schema=schema)

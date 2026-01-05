@@ -9,7 +9,6 @@ from homeassistant.components.climate import (
     HVACMode,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import script
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -17,6 +16,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import (
     CONF_BLASTER_ACTION,
     CONF_DEVICE_TYPE,
+    CONF_MAX_TEMP,
+    CONF_MIN_TEMP,
     CONF_POWER_OFF_CODE,
     CONF_POWER_ON_CODE,
     CONF_TEMP_DEC_CODE,
@@ -74,12 +75,12 @@ class RewireClimate(RewireEntity, ClimateEntity):
 
         if self._temp_inc_code and self._temp_dec_code:
             self._attr_supported_features |= ClimateEntityFeature.TARGET_TEMPERATURE
-            self._attr_min_temp = 16
-            self._attr_max_temp = 30
+            self._attr_min_temp = data.get(CONF_MIN_TEMP, 16)
+            self._attr_max_temp = data.get(CONF_MAX_TEMP, 30)
             self._temp_step = 1
-            self._attr_target_temperature = 22
+            self._attr_target_temperature = self._attr_min_temp
 
-        self._attr_temperature_unit = UnitOfTemperature.CELSIUS
+        self._attr_temperature_unit = self.hass.config.units.temperature_unit
         self._attr_hvac_mode = HVACMode.OFF
 
         self._blaster_actions = data.get(CONF_BLASTER_ACTION, [])
