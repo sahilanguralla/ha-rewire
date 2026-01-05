@@ -29,9 +29,7 @@ async def async_setup_entry(
     coordinator: DysonIRCoordinator = hass.data[DOMAIN][config_entry.entry_id]
     actions = config_entry.data.get(CONF_ACTIONS, [])
 
-    entities = [
-        DysonIRButton(coordinator, config_entry.entry_id, action) for action in actions
-    ]
+    entities = [DysonIRButton(coordinator, config_entry.entry_id, action) for action in actions]
 
     async_add_entities(entities)
 
@@ -39,32 +37,22 @@ async def async_setup_entry(
 class DysonIRButton(DysonIREntity, ButtonEntity):
     """Button entity for a specific IR action."""
 
-    def __init__(
-        self, coordinator: DysonIRCoordinator, entry_id: str, action: dict[str, str]
-    ) -> None:
+    def __init__(self, coordinator: DysonIRCoordinator, entry_id: str, action: dict[str, str]) -> None:
         """Initialize the button."""
         super().__init__(coordinator, entry_id)
         self._action_name = action[CONF_ACTION_NAME]
         self._action_code = action[CONF_ACTION_CODE]
 
         # Override unique_id and name for this specific button
-        self._attr_name = (
-            f"{coordinator.config_entry.data.get('name')} {self._action_name}"
-        )
-        self._attr_unique_id = (
-            f"{DOMAIN}_{entry_id}_{self._action_name.lower().replace(' ', '_')}"
-        )
+        self._attr_name = f"{coordinator.config_entry.data.get('name')} {self._action_name}"
+        self._attr_unique_id = f"{DOMAIN}_{entry_id}_{self._action_name.lower().replace(' ', '_')}"
 
         # Load blaster config (now a list of actions from ActionSelector)
-        self._blaster_actions = coordinator.config_entry.data.get(
-            CONF_BLASTER_ACTION, []
-        )
+        self._blaster_actions = coordinator.config_entry.data.get(CONF_BLASTER_ACTION, [])
 
     async def async_press(self) -> None:
         """Handle the button press."""
-        _LOGGER.debug(
-            "Button pressed: %s. Blaster actions: %s", self.name, self._blaster_actions
-        )
+        _LOGGER.debug("Button pressed: %s. Blaster actions: %s", self.name, self._blaster_actions)
         if not self._blaster_actions:
             _LOGGER.error("No blaster actions configured")
             return
@@ -80,15 +68,8 @@ class DysonIRButton(DysonIREntity, ButtonEntity):
             """Recursively inject IR code into action data."""
             if isinstance(obj, dict):
                 for key, value in obj.items():
-                    if (
-                        key in ("command", "code", "value", "payload")
-                        and value == "IR_CODE"
-                    ):
-                        obj[key] = (
-                            [self._action_code]
-                            if key == "command"
-                            else self._action_code
-                        )
+                    if key in ("command", "code", "value", "payload") and value == "IR_CODE":
+                        obj[key] = [self._action_code] if key == "command" else self._action_code
                         _LOGGER.debug("Injected IR code into %s: %s", key, obj[key])
                     elif isinstance(value, (dict, list)):
                         inject_code(value)
@@ -100,16 +81,45 @@ class DysonIRButton(DysonIREntity, ButtonEntity):
 
         _LOGGER.debug("Blaster actions to execute after injection: %s", actions)
 
-        try:
-            script_obj = script.Script(
-                self.hass,
-                actions,
-                self.name,
-                DOMAIN,
-            )
-            await script_obj.async_run(context=self._context)
+        # Execute actions
+        for action in actions:
+            # Handle Service Call (preferred for new config flow)
+            if "service" in action:
+                try:
+                    domain, service_name = action["service"].split(".", 1)
+                    target = action.get("target")
+                    data = action.get("data")
+
+                    _LOGGER.debug(
+                        "Calling service %s.%s with data %s and target %s",
+                        domain,
+                        service_name,
+                        data,
+                        target,
+                    )
+
+                    await self.hass.services.async_call(
+                        domain,
+                        service_name,
+                        service_data=data,
+                        target=target,
+                        context=self._context,
+                        blocking=True,
+                    )
+                except Exception as err:
+                    _LOGGER.error("Failed to execute service call %s: %s", action["service"], err)
+
+            # Fallback for Device Actions or other script syntax (Old Config)
+            else:
+                try:
+                    # Wrap single action in list for script
+                    script_obj = script.Script(
+                        self.hass,
+                        [action],
+                        self.name,
+                        DOMAIN,
+                    )
+                    await script_obj.async_run(context=self._context)
+                except Exception as err:
+                    _LOGGER.error("Failed to execute script action %s: %s", action, err)
             _LOGGER.debug("Executed blaster actions for %s", self._action_name)
-        except Exception as err:
-            _LOGGER.error(
-                "Failed to execute blaster actions for %s: %s", self._action_name, err
-            )
