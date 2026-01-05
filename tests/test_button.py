@@ -1,9 +1,9 @@
-"""Test dyson_ir button platform."""
+"""Test rewire button platform."""
 from unittest.mock import MagicMock, patch
 
 from homeassistant.core import HomeAssistant
 
-from custom_components.dyson_ir.const import (
+from custom_components.rewire.const import (
     CONF_ACTIONS,
     CONF_BLASTER_ACTION,
     DOMAIN,
@@ -30,16 +30,14 @@ async def test_button_creation_and_press(hass: HomeAssistant):
     }
 
     # Setup coordinator
-    with patch(
-        "custom_components.dyson_ir.coordinator.DysonIRCoordinator.async_config_entry_first_refresh"
-    ):
-        from custom_components.dyson_ir.coordinator import DysonIRCoordinator
+    with patch("custom_components.rewire.coordinator.RewireCoordinator.async_config_entry_first_refresh"):
+        from custom_components.rewire.coordinator import RewireCoordinator
 
-        coordinator = DysonIRCoordinator(hass, config_entry)
+        coordinator = RewireCoordinator(hass, config_entry)
         hass.data[DOMAIN] = {config_entry.entry_id: coordinator}
 
     # Setup button platform
-    from custom_components.dyson_ir.button import async_setup_entry
+    from custom_components.rewire.button import async_setup_entry
 
     async_add_entities = MagicMock()
     await async_setup_entry(hass, config_entry, async_add_entities)

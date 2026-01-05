@@ -1,4 +1,4 @@
-"""Data coordinator for Dyson IR devices."""
+"""Data coordinator for RewIRe devices."""
 import logging
 from datetime import timedelta
 from typing import Any, Dict

@@ -1,4 +1,4 @@
-"""Global fixtures for dyson_ir integration tests."""
+"""Global fixtures for rewire integration tests."""
 
 import pytest
 

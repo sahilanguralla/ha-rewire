@@ -2,8 +2,6 @@
 
 **RewIRe** is a generic Home Assistant integration that transforms any "dumb" IR-controlled device into a smart entity. It works by wrapping your existing IR blaster (like Broadlink, ESPHome, or Tuya) into a full-featured Home Assistant entity (Fan, Climate, Light, etc.) with state estimation.
 
-> **Note**: This integration was formerly known as "Dyson IR".
-
 ## Features
 
 - **Standard Entities**: Creates proper `fan`, `climate` (AC), and `light` entities.

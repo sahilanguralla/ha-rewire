@@ -1,10 +1,10 @@
-"""Test dyson_ir config flow."""
+"""Test rewire config flow."""
 from unittest.mock import patch
 
 from homeassistant import config_entries, data_entry_flow
 from homeassistant.core import HomeAssistant
 
-from custom_components.dyson_ir.const import (
+from custom_components.rewire.const import (
     CONF_ACTIONS,
     CONF_BLASTER_ACTION,
     CONF_DEVICE_TYPE,
@@ -16,9 +16,7 @@ from custom_components.dyson_ir.const import (
 async def test_full_config_flow(hass: HomeAssistant):
     """Test the full multi-step config flow."""
     # Step 1: User
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": config_entries.SOURCE_USER}
-    )
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
 
     assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
     assert result["step_id"] == "user"
@@ -65,9 +63,7 @@ async def test_full_config_flow(hass: HomeAssistant):
     assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
     assert result["step_id"] == "actions"
 
-    with patch(
-        "custom_components.dyson_ir.async_setup_entry", return_value=True
-    ) as mock_setup:
+    with patch("custom_components.rewire.async_setup_entry", return_value=True) as mock_setup:
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             user_input={"add_more": False},
@@ -86,9 +82,7 @@ async def test_full_config_flow(hass: HomeAssistant):
 
 async def test_no_actions_error(hass: HomeAssistant):
     """Test error when no actions are added."""
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": config_entries.SOURCE_USER}
-    )
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={"name": "Test", CONF_DEVICE_TYPE: DEVICE_TYPE_FAN},
@@ -99,9 +93,7 @@ async def test_no_actions_error(hass: HomeAssistant):
     )
 
     # Try to finish without adding any actions
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], user_input={"add_more": False}
-    )
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], user_input={"add_more": False})
 
     assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
     assert result["step_id"] == "actions"
