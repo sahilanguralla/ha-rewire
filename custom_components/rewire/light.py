@@ -1,4 +1,4 @@
-"""Light platform for RewIRe."""
+import copy
 import logging
 from typing import Any
 
@@ -8,6 +8,7 @@ from homeassistant.components.light import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import script
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
@@ -77,10 +78,6 @@ class RewireLight(RewireEntity, LightEntity):
         """Helper to send the IR code."""
         if not self._blaster_actions or not code:
             return
-
-        import copy
-
-        from homeassistant.helpers import script
 
         actions = copy.deepcopy(self._blaster_actions)
 

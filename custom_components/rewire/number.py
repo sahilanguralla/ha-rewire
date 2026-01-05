@@ -1,10 +1,11 @@
-"""Number platform for RewIRe."""
+import copy
 import logging
 from typing import Any
 
 from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import script
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
@@ -98,11 +99,6 @@ class RewireNumber(RewireEntity, NumberEntity, RestoreEntity):
         """Helper to send the IR code."""
         if not self._blaster_actions or not code:
             return
-
-        # Optimized: Prepare the actions once
-        import copy
-
-        from homeassistant.helpers import script
 
         base_actions = copy.deepcopy(self._blaster_actions)
 

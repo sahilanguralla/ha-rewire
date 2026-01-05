@@ -1,6 +1,7 @@
 .ruff_cache
 .env
 venv/
+.venv/
 *.pyc
 *.egg-info/
 dist/

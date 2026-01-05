@@ -1,10 +1,11 @@
-"""Button platform for RewIRe."""
+import copy
 import logging
 from typing import Any
 
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import script
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
@@ -62,11 +63,6 @@ class RewireButton(RewireEntity, ButtonEntity):
             _LOGGER.error("No blaster actions configured")
             return
 
-        import copy
-
-        from homeassistant.helpers import script
-
-        # Deep copy to avoid mutating the original config
         actions = copy.deepcopy(self._blaster_actions)
 
         def inject_code(obj: Any) -> None:

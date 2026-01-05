@@ -1,5 +1,5 @@
-"""Climate platform for RewIRe."""
 import asyncio
+import copy
 import logging
 from typing import Any
 
@@ -11,6 +11,7 @@ from homeassistant.components.climate import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import script
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
@@ -88,10 +89,6 @@ class RewireClimate(RewireEntity, ClimateEntity):
         if not self._blaster_actions or not code:
             return
 
-        import copy
-
-        from homeassistant.helpers import script
-
         actions = copy.deepcopy(self._blaster_actions)
 
         def inject_code(obj: Any) -> None:
@@ -137,7 +134,7 @@ class RewireClimate(RewireEntity, ClimateEntity):
                 await self._send_code(self._power_off_code)
             self._attr_hvac_mode = HVACMode.OFF
         else:
-            # Turn ON (assuming COOL state or generic ON)
+            # Turn ON if we were OFF
             if self._attr_hvac_mode == HVACMode.OFF and self._power_on_code:
                 await self._send_code(self._power_on_code)
 
@@ -147,7 +144,10 @@ class RewireClimate(RewireEntity, ClimateEntity):
 
     async def async_turn_on(self) -> None:
         """Turn the entity on."""
-        await self.async_set_hvac_mode(HVACMode.COOL)
+        if self._power_on_code:
+            await self._send_code(self._power_on_code)
+        self._attr_hvac_mode = HVACMode.COOL
+        self.async_write_ha_state()
 
     async def async_turn_off(self) -> None:
         """Turn the entity off."""

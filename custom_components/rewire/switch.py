@@ -1,10 +1,11 @@
-"""Switch platform for RewIRe."""
+import copy
 import logging
 from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import script
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
@@ -77,10 +78,6 @@ class RewireSwitch(RewireEntity, SwitchEntity):
         """Helper to send the IR code."""
         if not self._blaster_actions or not code:
             return
-
-        import copy
-
-        from homeassistant.helpers import script
 
         actions = copy.deepcopy(self._blaster_actions)
 
