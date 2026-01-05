@@ -14,6 +14,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up RewIRe from a config entry."""
     hass.data.setdefault(DOMAIN, {})
 
+    _LOGGER.debug("Setting up RewIRe entry %s with data: %s", entry.entry_id, entry.data)
     coordinator = RewireCoordinator(hass, entry)
     await coordinator.async_config_entry_first_refresh()
 

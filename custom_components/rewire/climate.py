@@ -80,7 +80,7 @@ class RewireClimate(RewireEntity, ClimateEntity):
             self._temp_step = 1
             self._attr_target_temperature = self._attr_min_temp
 
-        self._attr_temperature_unit = self.hass.config.units.temperature_unit
+        self._attr_temperature_unit = coordinator.hass.config.units.temperature_unit
         self._attr_hvac_mode = HVACMode.OFF
 
         self._blaster_actions = data.get(CONF_BLASTER_ACTION, [])
