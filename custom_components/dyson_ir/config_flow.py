@@ -8,11 +8,24 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
+    ACTION_TYPE_BUTTON,
+    ACTION_TYPE_INC_DEC,
+    ACTION_TYPE_POWER,
+    ACTION_TYPE_TOGGLE,
+    ACTION_TYPES,
     CONF_ACTION_CODE,
+    CONF_ACTION_CODE_DEC,
+    CONF_ACTION_CODE_INC,
+    CONF_ACTION_CODE_OFF,
+    CONF_ACTION_CODE_ON,
     CONF_ACTION_NAME,
+    CONF_ACTION_TYPE,
     CONF_ACTIONS,
     CONF_BLASTER_ACTION,
     CONF_DEVICE_TYPE,
+    CONF_MAX_VALUE,
+    CONF_MIN_VALUE,
+    CONF_STEP_VALUE,
     DEVICE_TYPE_FAN,
     DEVICE_TYPES,
     DOMAIN,
@@ -29,7 +42,8 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         """Initialize config flow."""
         self.config_data: Dict[str, Any] = {}
-        self.actions: list[Dict[str, str]] = []
+        self.actions: list[Dict[str, Any]] = []
+        self.current_action_type: Optional[str] = None
 
     async def async_step_user(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Step 1: Device Name and Type."""
@@ -195,19 +209,90 @@ class DysonIRConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_add_action(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Sub-step to add a single action."""
+        """Sub-step to add a single action: Select Type."""
         if user_input is not None:
-            self.actions.append(user_input)
-            return await self.async_step_actions()
+            self.current_action_type = user_input[CONF_ACTION_TYPE]
+            # Check for existing Power action if type is Power
+            if self.current_action_type == ACTION_TYPE_POWER:
+                for action in self.actions:
+                    if action.get(CONF_ACTION_TYPE) == ACTION_TYPE_POWER:
+                        return self.async_show_form(
+                            step_id="add_action",
+                            data_schema=vol.Schema(
+                                {
+                                    vol.Required(CONF_ACTION_TYPE, default=ACTION_TYPE_BUTTON): vol.In(
+                                        [t for t in ACTION_TYPES if t != ACTION_TYPE_POWER]
+                                    )
+                                }
+                            ),
+                            errors={"base": "power_action_exists"},
+                        )
+            return await self.async_step_configure_action()
 
         schema = vol.Schema(
             {
-                vol.Required(CONF_ACTION_NAME): str,
-                vol.Required(CONF_ACTION_CODE): str,
+                vol.Required(CONF_ACTION_TYPE, default=ACTION_TYPE_BUTTON): vol.In(ACTION_TYPES),
             }
         )
 
         return self.async_show_form(step_id="add_action", data_schema=schema)
+
+    async def async_step_configure_action(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Configure the details for the selected action type."""
+        if user_input is not None:
+            # Add action type to the input
+            user_input[CONF_ACTION_TYPE] = self.current_action_type
+            self.actions.append(user_input)
+            return await self.async_step_actions()
+
+        # Dynamic Schema based on Type
+        data_schema = {vol.Required(CONF_ACTION_NAME): str}
+
+        if self.current_action_type == ACTION_TYPE_POWER:
+            data_schema.update(
+                {
+                    vol.Required("separate_codes", default=True): bool,
+                    vol.Optional(CONF_ACTION_CODE_ON): str,
+                    vol.Optional(CONF_ACTION_CODE_OFF): str,
+                    vol.Optional(CONF_ACTION_CODE): str,  # For toggle-style power
+                }
+            )
+            # Note: We can't easily do complex conditional validation (if separate=True then require on/off)
+            # inside a simple vol.Schema here without strict validation or error loops.
+            # Simplified approach: Ask user to fill relevant fields.
+            # Ideally we might split this into another step if we want strictness,
+            # but let's trust the user or improve schema later if needed.
+
+        elif self.current_action_type == ACTION_TYPE_TOGGLE:
+            data_schema.update(
+                {
+                    vol.Required(CONF_ACTION_CODE): str,
+                }
+            )
+
+        elif self.current_action_type == ACTION_TYPE_INC_DEC:
+            data_schema.update(
+                {
+                    vol.Required(CONF_MIN_VALUE, default=10): int,
+                    vol.Required(CONF_MAX_VALUE, default=30): int,
+                    vol.Required(CONF_STEP_VALUE, default=1): int,
+                    vol.Required(CONF_ACTION_CODE_INC): str,
+                    vol.Required(CONF_ACTION_CODE_DEC): str,
+                }
+            )
+
+        elif self.current_action_type == ACTION_TYPE_BUTTON:
+            data_schema.update(
+                {
+                    vol.Required(CONF_ACTION_CODE): str,
+                }
+            )
+
+        return self.async_show_form(
+            step_id="configure_action",
+            data_schema=vol.Schema(data_schema),
+            description_placeholders={"type": self.current_action_type},
+        )
 
     @staticmethod
     @callback

@@ -8,8 +8,10 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
+    ACTION_TYPE_BUTTON,
     CONF_ACTION_CODE,
     CONF_ACTION_NAME,
+    CONF_ACTION_TYPE,
     CONF_ACTIONS,
     CONF_BLASTER_ACTION,
     DOMAIN,
@@ -29,7 +31,12 @@ async def async_setup_entry(
     coordinator: DysonIRCoordinator = hass.data[DOMAIN][config_entry.entry_id]
     actions = config_entry.data.get(CONF_ACTIONS, [])
 
-    entities = [DysonIRButton(coordinator, config_entry.entry_id, action) for action in actions]
+    entities = []
+    for action in actions:
+        action_type = action.get(CONF_ACTION_TYPE)
+        # Create button if type is explicitly BUTTON, or if type is missing (legacy config)
+        if action_type == ACTION_TYPE_BUTTON or action_type is None:
+            entities.append(DysonIRButton(coordinator, config_entry.entry_id, action))
 
     async_add_entities(entities)
 
