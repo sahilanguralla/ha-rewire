@@ -22,6 +22,7 @@ from .const import (
     CONF_POWER_ON_CODE,
     CONF_TEMP_DEC_CODE,
     CONF_TEMP_INC_CODE,
+    CONF_TEMP_STEP,
     DEVICE_TYPE_AC,
     DOMAIN,
 )
@@ -77,7 +78,7 @@ class RewireClimate(RewireEntity, ClimateEntity):
             self._attr_supported_features |= ClimateEntityFeature.TARGET_TEMPERATURE
             self._attr_min_temp = data.get(CONF_MIN_TEMP, 16)
             self._attr_max_temp = data.get(CONF_MAX_TEMP, 30)
-            self._temp_step = 1
+            self._attr_target_temperature_step = data.get(CONF_TEMP_STEP, 1)
             self._attr_target_temperature = self._attr_min_temp
 
         self._attr_temperature_unit = coordinator.hass.config.units.temperature_unit
@@ -161,7 +162,7 @@ class RewireClimate(RewireEntity, ClimateEntity):
             return
 
         diff = temperature - self._attr_target_temperature
-        steps = int(abs(diff) / self._temp_step)
+        steps = int(abs(diff) / self._attr_target_temperature_step)
 
         code = self._temp_inc_code if diff > 0 else self._temp_dec_code
 

@@ -36,6 +36,7 @@ CONF_MAX_VALUE = "max_value"
 CONF_STEP_VALUE = "step_value"
 CONF_MIN_TEMP = "min_temp"
 CONF_MAX_TEMP = "max_temp"
+CONF_TEMP_STEP = "temp_step"
 
 # Action Types
 ACTION_TYPE_BUTTON = "button"

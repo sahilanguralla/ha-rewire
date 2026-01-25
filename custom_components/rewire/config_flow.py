@@ -38,6 +38,7 @@ from .const import (
     CONF_STEP_VALUE,
     CONF_TEMP_DEC_CODE,
     CONF_TEMP_INC_CODE,
+    CONF_TEMP_STEP,
     DEVICE_TYPE_AC,
     DEVICE_TYPE_FAN,
     DEVICE_TYPE_LIGHT,
@@ -212,6 +213,14 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         mode=selector.NumberSelectorMode.BOX,
                         unit_of_measurement=self.hass.config.units.temperature_unit,
                         step=1,
+                    )
+                ),
+                vol.Required(CONF_TEMP_STEP, default=1): selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        mode=selector.NumberSelectorMode.BOX,
+                        min=0.1,
+                        max=5.0,
+                        step=0.1,
                     )
                 ),
             }
