@@ -16,10 +16,15 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import (
     CONF_BLASTER_ACTION,
     CONF_DEVICE_TYPE,
+    CONF_MAX_SPEED,
     CONF_MAX_TEMP,
+    CONF_MIN_SPEED,
     CONF_MIN_TEMP,
     CONF_POWER_OFF_CODE,
     CONF_POWER_ON_CODE,
+    CONF_SPEED_DEC_CODE,
+    CONF_SPEED_INC_CODE,
+    CONF_SPEED_STEP,
     CONF_TEMP_DEC_CODE,
     CONF_TEMP_INC_CODE,
     CONF_TEMP_STEP,
@@ -66,6 +71,8 @@ class RewireClimate(RewireEntity, ClimateEntity):
         self._power_off_code = data.get(CONF_POWER_OFF_CODE)
         self._temp_inc_code = data.get(CONF_TEMP_INC_CODE)
         self._temp_dec_code = data.get(CONF_TEMP_DEC_CODE)
+        self._speed_inc_code = data.get(CONF_SPEED_INC_CODE)
+        self._speed_dec_code = data.get(CONF_SPEED_DEC_CODE)
 
         self._attr_unique_id = f"{DOMAIN}_{entry_id}_climate"
         self._attr_name = data.get("name")
@@ -85,6 +92,15 @@ class RewireClimate(RewireEntity, ClimateEntity):
 
         self._attr_temperature_unit = coordinator.hass.config.units.temperature_unit
         self._attr_hvac_mode = HVACMode.OFF
+        self._attr_fan_mode = None
+
+        if self._speed_inc_code and self._speed_dec_code:
+            self._base_features |= ClimateEntityFeature.FAN_MODE
+            self._speed_min = data.get(CONF_MIN_SPEED, 1)
+            self._speed_max = data.get(CONF_MAX_SPEED, 10)
+            self._speed_step = data.get(CONF_SPEED_STEP, 1)
+            self._attr_fan_modes = [str(i) for i in range(self._speed_min, self._speed_max + 1, self._speed_step)]
+            self._attr_fan_mode = self._attr_fan_modes[0]
 
         self._blaster_actions = data.get(CONF_BLASTER_ACTION, [])
 
@@ -162,8 +178,35 @@ class RewireClimate(RewireEntity, ClimateEntity):
         """Return the list of supported features."""
         features = self._base_features
         if self._attr_hvac_mode == HVACMode.OFF:
-            features &= ~ClimateEntityFeature.TARGET_TEMPERATURE
+            features &= ~(ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.FAN_MODE)
         return features
+
+    async def async_set_fan_mode(self, fan_mode: str) -> None:
+        """Set new target fan mode."""
+        if self._attr_hvac_mode == HVACMode.OFF:
+            _LOGGER.debug("Fan control ignored because AC is OFF")
+            self.async_write_ha_state()
+            return
+
+        if not self._speed_inc_code or not self._attr_fan_mode:
+            return
+
+        try:
+            target_value = int(fan_mode)
+            current_value = int(self._attr_fan_mode)
+        except ValueError:
+            return
+
+        diff = target_value - current_value
+        steps = int(abs(diff) / self._speed_step)
+
+        code = self._speed_inc_code if diff > 0 else self._speed_dec_code
+
+        if code and steps > 0:
+            await self._send_code(code, repeats=steps, delay=0.3)
+
+        self._attr_fan_mode = fan_mode
+        self.async_write_ha_state()
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set new target temperature."""

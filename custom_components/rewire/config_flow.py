@@ -26,8 +26,10 @@ from .const import (
     CONF_BRIGHTNESS_DEC_CODE,
     CONF_BRIGHTNESS_INC_CODE,
     CONF_DEVICE_TYPE,
+    CONF_MAX_SPEED,
     CONF_MAX_TEMP,
     CONF_MAX_VALUE,
+    CONF_MIN_SPEED,
     CONF_MIN_TEMP,
     CONF_MIN_VALUE,
     CONF_OSCILLATE_CODE,
@@ -35,6 +37,7 @@ from .const import (
     CONF_POWER_ON_CODE,
     CONF_SPEED_DEC_CODE,
     CONF_SPEED_INC_CODE,
+    CONF_SPEED_STEP,
     CONF_STEP_VALUE,
     CONF_TEMP_DEC_CODE,
     CONF_TEMP_INC_CODE,
@@ -182,6 +185,9 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional(CONF_OSCILLATE_CODE): str,
                 vol.Optional(CONF_SPEED_INC_CODE): str,
                 vol.Optional(CONF_SPEED_DEC_CODE): str,
+                vol.Required(CONF_MIN_SPEED, default=1): int,
+                vol.Required(CONF_MAX_SPEED, default=10): int,
+                vol.Required(CONF_SPEED_STEP, default=1): int,
             }
         )
         return self.async_show_form(step_id="configure_fan", data_schema=schema)
@@ -223,6 +229,11 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         step=0.1,
                     )
                 ),
+                vol.Optional(CONF_SPEED_INC_CODE): str,
+                vol.Optional(CONF_SPEED_DEC_CODE): str,
+                vol.Required(CONF_MIN_SPEED, default=1): int,
+                vol.Required(CONF_MAX_SPEED, default=10): int,
+                vol.Required(CONF_SPEED_STEP, default=1): int,
             }
         )
         return self.async_show_form(step_id="configure_climate", data_schema=schema)

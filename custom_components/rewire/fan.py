@@ -17,11 +17,14 @@ from homeassistant.util.percentage import (
 from .const import (
     CONF_BLASTER_ACTION,
     CONF_DEVICE_TYPE,
+    CONF_MAX_SPEED,
+    CONF_MIN_SPEED,
     CONF_OSCILLATE_CODE,
     CONF_POWER_OFF_CODE,
     CONF_POWER_ON_CODE,
     CONF_SPEED_DEC_CODE,
     CONF_SPEED_INC_CODE,
+    CONF_SPEED_STEP,
     DEVICE_TYPE_FAN,
     DOMAIN,
 )
@@ -78,10 +81,9 @@ class RewireFan(RewireEntity, FanEntity):
 
         if self._speed_inc_code and self._speed_dec_code:
             self._attr_supported_features |= FanEntityFeature.SET_SPEED
-            # Default speed range for generic IR
-            self._speed_min = 1
-            self._speed_max = 10
-            self._speed_step = 1
+            self._speed_min = data.get(CONF_MIN_SPEED, 1)
+            self._speed_max = data.get(CONF_MAX_SPEED, 10)
+            self._speed_step = data.get(CONF_SPEED_STEP, 1)
             self._speed_range = (self._speed_min, self._speed_max)
 
         self._attr_is_on = False
