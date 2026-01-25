@@ -18,8 +18,13 @@ from .const import (
     CONF_ACTIONS,
     CONF_BLASTER_ACTION,
     CONF_DEVICE_TYPE,
+    CONF_MAX_SPEED,
     CONF_MAX_VALUE,
+    CONF_MIN_SPEED,
     CONF_MIN_VALUE,
+    CONF_SPEED_DEC_CODE,
+    CONF_SPEED_INC_CODE,
+    CONF_SPEED_STEP,
     CONF_STEP_VALUE,
     DEVICE_TYPE_AC,
     DEVICE_TYPE_FAN,
@@ -60,6 +65,20 @@ async def async_setup_entry(
 
     async_add_entities(entities)
 
+    # Add AC Fan Speed if codes are present
+    if device_type == DEVICE_TYPE_AC:
+        data = config_entry.data
+        if data.get(CONF_SPEED_INC_CODE) and data.get(CONF_SPEED_DEC_CODE):
+            action = {
+                CONF_ACTION_NAME: "Fan Speed",
+                CONF_ACTION_CODE_INC: data.get(CONF_SPEED_INC_CODE),
+                CONF_ACTION_CODE_DEC: data.get(CONF_SPEED_DEC_CODE),
+                CONF_MIN_VALUE: data.get(CONF_MIN_SPEED, 1),
+                CONF_MAX_VALUE: data.get(CONF_MAX_SPEED, 10),
+                CONF_STEP_VALUE: data.get(CONF_SPEED_STEP, 1),
+            }
+            async_add_entities([RewireNumber(coordinator, config_entry.entry_id, action)])
+
 
 class RewireNumber(RewireEntity, NumberEntity, RestoreEntity):
     """Number representation of inc/dec buttons."""
@@ -85,6 +104,14 @@ class RewireNumber(RewireEntity, NumberEntity, RestoreEntity):
 
         # Load blaster config
         self._blaster_actions = coordinator.config_entry.data.get(CONF_BLASTER_ACTION, [])
+        self._device_type = coordinator.config_entry.data.get(CONF_DEVICE_TYPE)
+
+    @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        if self._device_type == DEVICE_TYPE_AC:
+            return self.coordinator.data.get("power", False)
+        return True
 
     async def async_added_to_hass(self) -> None:
         """Run when entity about to be added to hass."""
