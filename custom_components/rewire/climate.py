@@ -60,6 +60,8 @@ class RewireClimate(RewireEntity, ClimateEntity):
 
         data = coordinator.config_entry.data
 
+        self._base_features = ClimateEntityFeature(0)
+
         self._power_on_code = data.get(CONF_POWER_ON_CODE)
         self._power_off_code = data.get(CONF_POWER_OFF_CODE)
         self._temp_inc_code = data.get(CONF_TEMP_INC_CODE)
@@ -71,11 +73,11 @@ class RewireClimate(RewireEntity, ClimateEntity):
         self._attr_hvac_modes = []
 
         if self._power_on_code and self._power_off_code:
-            self._attr_supported_features |= ClimateEntityFeature.TURN_ON | ClimateEntityFeature.TURN_OFF
+            self._base_features |= ClimateEntityFeature.TURN_ON | ClimateEntityFeature.TURN_OFF
             self._attr_hvac_modes = [HVACMode.OFF, HVACMode.COOL, HVACMode.HEAT]
 
         if self._temp_inc_code and self._temp_dec_code:
-            self._attr_supported_features |= ClimateEntityFeature.TARGET_TEMPERATURE
+            self._base_features |= ClimateEntityFeature.TARGET_TEMPERATURE
             self._attr_min_temp = data.get(CONF_MIN_TEMP, 16)
             self._attr_max_temp = data.get(CONF_MAX_TEMP, 30)
             self._attr_target_temperature_step = data.get(CONF_TEMP_STEP, 1)
@@ -155,8 +157,21 @@ class RewireClimate(RewireEntity, ClimateEntity):
         """Turn the entity off."""
         await self.async_set_hvac_mode(HVACMode.OFF)
 
+    @property
+    def supported_features(self) -> ClimateEntityFeature:
+        """Return the list of supported features."""
+        features = self._base_features
+        if self._attr_hvac_mode == HVACMode.OFF:
+            features &= ~ClimateEntityFeature.TARGET_TEMPERATURE
+        return features
+
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set new target temperature."""
+        if self._attr_hvac_mode == HVACMode.OFF:
+            _LOGGER.debug("Temperature control ignored because AC is OFF")
+            self.async_write_ha_state()
+            return
+
         temperature = kwargs.get("temperature")
         if temperature is None or not self._temp_inc_code:
             return
