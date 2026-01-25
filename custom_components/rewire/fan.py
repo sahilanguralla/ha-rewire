@@ -92,10 +92,12 @@ class RewireFan(RewireEntity, FanEntity):
 
         self._blaster_actions = data.get(CONF_BLASTER_ACTION, [])
 
-    async def _send_code(self, code: str, repeats: int = 1) -> None:
+    async def _send_code(self, code: str, repeats: int = 1, delay: float = 0.0) -> None:
         """Helper to send the IR code."""
         if not self._blaster_actions or not code:
             return
+
+        import asyncio
 
         actions = copy.deepcopy(self._blaster_actions)
 
@@ -112,7 +114,10 @@ class RewireFan(RewireEntity, FanEntity):
 
         inject_code(actions)
 
-        for _ in range(repeats):
+        for i in range(repeats):
+            if delay > 0 and i > 0:
+                await asyncio.sleep(delay)
+
             for action in actions:
                 if "service" in action:
                     try:
@@ -179,12 +184,23 @@ class RewireFan(RewireEntity, FanEntity):
         current_value = percentage_to_ranged_value(self._speed_range, current_pct)
 
         diff = target_value - current_value
-        steps = int(abs(diff) / self._speed_step)
+        if diff == 0:
+            return
 
-        code = self._speed_inc_code if diff > 0 else self._speed_dec_code
+        # Restrict to increasing/decreasing by only one step at a time
+        direction = 1 if diff > 0 else -1
+        code = self._speed_inc_code if direction > 0 else self._speed_dec_code
 
-        if code and steps > 0:
-            await self._send_code(code, repeats=steps)
+        if code:
+            await self._send_code(code, repeats=1)
 
-        self._attr_percentage = percentage
+        new_value = current_value + (direction * self._speed_step)
+        # Clamp to range
+        new_value = max(self._speed_min, min(self._speed_max, new_value))
+
+        from homeassistant.util.percentage import (
+            ranged_value_to_percentage,
+        )
+
+        self._attr_percentage = ranged_value_to_percentage(self._speed_range, new_value)
         self.async_write_ha_state()

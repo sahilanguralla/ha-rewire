@@ -122,10 +122,12 @@ class RewireNumber(RewireEntity, NumberEntity, RestoreEntity):
             except ValueError:
                 pass
 
-    async def _send_code(self, code: str, repeats: int = 1) -> None:
+    async def _send_code(self, code: str, repeats: int = 1, delay: float = 0.0) -> None:
         """Helper to send the IR code."""
         if not self._blaster_actions or not code:
             return
+
+        import asyncio
 
         base_actions = copy.deepcopy(self._blaster_actions)
 
@@ -143,7 +145,10 @@ class RewireNumber(RewireEntity, NumberEntity, RestoreEntity):
         inject_code(base_actions)
 
         # Execute 'repeats' times
-        for _ in range(repeats):
+        for i in range(repeats):
+            if delay > 0 and i > 0:
+                await asyncio.sleep(delay)
+
             for action in base_actions:
                 # Handle Direct Service Call or Fallback
                 if "service" in action:
@@ -169,12 +174,13 @@ class RewireNumber(RewireEntity, NumberEntity, RestoreEntity):
             return
 
         diff = value - self._attr_native_value
-        steps = int(abs(diff) / self._attr_native_step)
 
-        code = self._action.get(CONF_ACTION_CODE_INC) if diff > 0 else self._action.get(CONF_ACTION_CODE_DEC)
+        # Restrict to increasing/decreasing by only one step at a time
+        direction = 1 if diff > 0 else -1
+        code = self._action.get(CONF_ACTION_CODE_INC) if direction > 0 else self._action.get(CONF_ACTION_CODE_DEC)
 
-        if code and steps > 0:
-            await self._send_code(code, repeats=steps)
+        if code:
+            await self._send_code(code, repeats=1)
 
-        self._attr_native_value = value
+        self._attr_native_value += direction * self._attr_native_step
         self.async_write_ha_state()

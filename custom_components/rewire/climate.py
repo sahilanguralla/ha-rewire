@@ -180,13 +180,15 @@ class RewireClimate(RewireEntity, ClimateEntity):
             return
 
         diff = temperature - self._attr_target_temperature
-        steps = int(abs(diff) / self._attr_target_temperature_step)
+        if diff == 0:
+            return
 
-        code = self._temp_inc_code if diff > 0 else self._temp_dec_code
+        # Restrict to increasing/decreasing by only one step at a time
+        direction = 1 if diff > 0 else -1
+        code = self._temp_inc_code if direction > 0 else self._temp_dec_code
 
-        if code and steps > 0:
-            # SEND WITH 300ms DELAY
-            await self._send_code(code, repeats=steps, delay=0.3)
+        if code:
+            await self._send_code(code, repeats=1)
 
-        self._attr_target_temperature = temperature
+        self._attr_target_temperature += direction * self._attr_target_temperature_step
         self.async_write_ha_state()
