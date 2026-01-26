@@ -1,55 +1,97 @@
 {
-    "config": {
-        "abort": {
-            "already_configured": "Device is already configured"
-        },
-        "error": {
-            "invalid_ir_code": "Invalid IR code format",
-            "no_actions": "At least one action is required"
-        },
-        "step": {
-            "actions": {
-                "data": {
-                    "add_more": "Add more actions?",
-                    "remove_action": "Remove an action"
-                },
-                "description": "Configure the actions/commands for your device. You must have at least one action.\n\nCurrently added actions:\n{actions}",
-                "title": "Actions List"
-            },
-            "add_action": {
-                "data": {
-                    "ir_code": "IR Code (Base64)",
-                    "name": "Action name (e.g., Power On)"
-                },
-                "title": "Add New Action"
-            },
-            "blaster": {
-                "data": {
-                    "blaster_action": "Action",
-                    "device_id": "IR Blaster Device"
-                },
-                "description": "Select the IR blaster device and the action to send IR codes",
-                "title": "IR Blaster Configuration"
-            },
-            "user": {
-                "data": {
-                    "device_type": "Device type",
-                    "name": "Device name"
-                },
-                "description": "Configure your IR-controlled device",
-                "title": "Device Setup"
-            }
-        },
-        "title": "RewIRe"
-    },
-    "options": {
-        "step": {
-            "init": {
-                "data": {
-                    "update_interval": "Coordinator Update Interval (seconds)"
-                },
-                "title": "RewIRe Options"
-            }
+  "config": {
+    "title": "RewIRe",
+    "step": {
+      "user": {
+        "title": "Device Setup",
+        "description": "Configure your IR-controlled device",
+        "data": {
+          "name": "Device name",
+          "device_type": "Device type"
         }
+      },
+      "blaster": {
+        "title": "IR Blaster Configuration",
+        "description": "Select the IR blaster device and the action to send IR codes",
+        "data": {
+          "device_id": "IR Blaster Device",
+          "blaster_action": "Action"
+        }
+      },
+      "actions": {
+        "title": "Actions List",
+        "description": "Configure the actions/commands for your device. You must have at least one action.\n\nCurrently added actions:\n{actions}",
+        "data": {
+          "add_more": "Add more actions?",
+          "remove_action": "Remove an action"
+        }
+      },
+      "add_action": {
+        "title": "Add New Action",
+        "data": {
+          "name": "Action name (e.g., Power On)",
+          "ir_code": "IR Code (Base64)"
+        }
+      },
+      "configure_climate": {
+        "title": "Configure AC",
+        "description": "Enter the IR codes for your Air Conditioner.",
+        "data": {
+          "power_on_code": "Power On Code",
+          "power_off_code": "Power Off Code",
+          "temp_inc_code": "Temperature Increase Code",
+          "temp_dec_code": "Temperature Decrease Code",
+          "min_temp": "Minimum Temperature",
+          "max_temp": "Maximum Temperature",
+          "temp_step": "Temperature Step",
+          "speed_inc_code": "Fan Speed Increase Code",
+          "speed_dec_code": "Fan Speed Decrease Code",
+          "min_speed": "Minimum Fan Speed",
+          "max_speed": "Maximum Fan Speed",
+          "speed_step": "Fan Speed Step"
+        }
+      },
+      "configure_fan": {
+        "title": "Configure Fan",
+        "description": "Enter the IR codes for your Fan.",
+        "data": {
+          "power_on_code": "Power On Code",
+          "power_off_code": "Power Off Code",
+          "oscillate_code": "Oscillate Code",
+          "speed_inc_code": "Speed Increase Code",
+          "speed_dec_code": "Speed Decrease Code",
+          "min_speed": "Minimum Speed",
+          "max_speed": "Maximum Speed",
+          "speed_step": "Speed Step"
+        }
+      },
+      "configure_light": {
+        "title": "Configure Light",
+        "description": "Enter the IR codes for your Light.",
+        "data": {
+          "power_on_code": "Power On Code",
+          "power_off_code": "Power Off Code",
+          "brightness_inc_code": "Brightness Increase Code",
+          "brightness_dec_code": "Brightness Decrease Code"
+        }
+      }
+    },
+    "error": {
+      "invalid_ir_code": "Invalid IR code format",
+      "no_actions": "At least one action is required"
+    },
+    "abort": {
+      "already_configured": "Device is already configured"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "RewIRe Options",
+        "data": {
+          "update_interval": "Coordinator Update Interval (seconds)"
+        }
+      }
+    }
+  }
 }

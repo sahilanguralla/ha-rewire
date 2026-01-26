@@ -32,6 +32,48 @@
           "name": "Action name (e.g., Power On)",
           "ir_code": "IR Code (Base64)"
         }
+      },
+      "configure_climate": {
+        "title": "Configure AC",
+        "description": "Enter the IR codes for your Air Conditioner.",
+        "data": {
+          "power_on_code": "Power On Code",
+          "power_off_code": "Power Off Code",
+          "temp_inc_code": "Temperature Increase Code",
+          "temp_dec_code": "Temperature Decrease Code",
+          "min_temp": "Minimum Temperature",
+          "max_temp": "Maximum Temperature",
+          "temp_step": "Temperature Step",
+          "speed_inc_code": "Fan Speed Increase Code",
+          "speed_dec_code": "Fan Speed Decrease Code",
+          "min_speed": "Minimum Fan Speed",
+          "max_speed": "Maximum Fan Speed",
+          "speed_step": "Fan Speed Step"
+        }
+      },
+      "configure_fan": {
+        "title": "Configure Fan",
+        "description": "Enter the IR codes for your Fan.",
+        "data": {
+          "power_on_code": "Power On Code",
+          "power_off_code": "Power Off Code",
+          "oscillate_code": "Oscillate Code",
+          "speed_inc_code": "Speed Increase Code",
+          "speed_dec_code": "Speed Decrease Code",
+          "min_speed": "Minimum Speed",
+          "max_speed": "Maximum Speed",
+          "speed_step": "Speed Step"
+        }
+      },
+      "configure_light": {
+        "title": "Configure Light",
+        "description": "Enter the IR codes for your Light.",
+        "data": {
+          "power_on_code": "Power On Code",
+          "power_off_code": "Power Off Code",
+          "brightness_inc_code": "Brightness Increase Code",
+          "brightness_dec_code": "Brightness Decrease Code"
+        }
       }
     },
     "error": {
