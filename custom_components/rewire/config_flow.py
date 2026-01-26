@@ -73,7 +73,13 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         schema = vol.Schema(
             {
                 vol.Required("name", default="My Device"): str,
-                vol.Required(CONF_DEVICE_TYPE, default=DEVICE_TYPE_FAN): vol.In(DEVICE_TYPES + ["other"]),
+                vol.Required(CONF_DEVICE_TYPE, default=DEVICE_TYPE_FAN): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=DEVICE_TYPES + ["other"],
+                        translation_key="device_type",
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                ),
             }
         )
 

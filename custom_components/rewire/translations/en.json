@@ -10,12 +10,18 @@
           "device_type": "Device type"
         }
       },
-      "blaster": {
-        "title": "IR Blaster Configuration",
-        "description": "Select the IR blaster device and the action to send IR codes",
+      "blaster_device": {
+        "title": "IR Blaster Device",
+        "description": "Select the device that will emit the IR commands.",
         "data": {
-          "device_id": "IR Blaster Device",
-          "blaster_action": "Action"
+          "blaster_device_id": "IR Blaster Device"
+        }
+      },
+      "blaster_action": {
+        "title": "IR Blaster Action",
+        "description": "Select the entity or service to use for sending IR codes.",
+        "data": {
+          "selection": "Action / Entity"
         }
       },
       "actions": {
@@ -74,11 +80,28 @@
           "brightness_inc_code": "Brightness Increase Code",
           "brightness_dec_code": "Brightness Decrease Code"
         }
+      },
+      "configure_action": {
+        "title": "Configure Action",
+        "description": "Configure the details for '{type}'.",
+        "data": {
+          "name": "Action Name",
+          "separate_codes": "Use separate codes for On/Off?",
+          "power_on_code": "Power On Code",
+          "power_off_code": "Power Off Code",
+          "action_code": "Action Code",
+          "min_value": "Minimum Value",
+          "max_value": "Maximum Value",
+          "step_value": "Step Value",
+          "action_code_inc": "Increase Code",
+          "action_code_dec": "Decrease Code"
+        }
       }
     },
     "error": {
       "invalid_ir_code": "Invalid IR code format",
-      "no_actions": "At least one action is required"
+      "no_actions": "At least one action is required",
+      "power_action_exists": "Only one Power action is allowed per device"
     },
     "abort": {
       "already_configured": "Device is already configured"
@@ -91,6 +114,16 @@
         "data": {
           "update_interval": "Coordinator Update Interval (seconds)"
         }
+      }
+    }
+  },
+  "selector": {
+    "device_type": {
+      "options": {
+        "fan": "Fan",
+        "ac": "Air Conditioner",
+        "light": "Light",
+        "other": "Other"
       }
     }
   }
