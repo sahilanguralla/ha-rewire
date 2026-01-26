@@ -1,6 +1,6 @@
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.6.3"
+version = "0.6.4"
 version_files = [
     "custom_components/rewire/manifest.json:version"
 ]
