@@ -1,6 +1,6 @@
 {
+  "title": "RewIRe",
   "config": {
-    "title": "RewIRe",
     "step": {
       "user": {
         "title": "Device Setup",
@@ -83,7 +83,7 @@
       },
       "configure_action": {
         "title": "Configure Action",
-        "description": "Configure the details for '{type}'.",
+        "description": "Configure the details for {type}.",
         "data": {
           "name": "Action Name",
           "separate_codes": "Use separate codes for On/Off?",
