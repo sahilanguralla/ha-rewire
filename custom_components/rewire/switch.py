@@ -47,7 +47,7 @@ async def async_setup_entry(
         # Determine if action is already handled by the main device entity
         handled = False
         if device_type in (DEVICE_TYPE_FAN, DEVICE_TYPE_AC, "light"):
-            if action_type in (ACTION_TYPE_POWER, ACTION_TYPE_TOGGLE):
+            if action_type == ACTION_TYPE_POWER:
                 handled = True
 
         if not handled and action_type in (ACTION_TYPE_POWER, ACTION_TYPE_TOGGLE):

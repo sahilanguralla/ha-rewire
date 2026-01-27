@@ -12,6 +12,13 @@ from homeassistant.helpers import script
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
+    ACTION_TYPE_BRIGHTNESS,
+    ACTION_TYPE_INC_DEC,
+    ACTION_TYPE_POWER,
+    CONF_ACTION_CODE_DEC,
+    CONF_ACTION_CODE_INC,
+    CONF_ACTION_TYPE,
+    CONF_ACTIONS,
     CONF_BLASTER_ACTION,
     CONF_BRIGHTNESS_DEC_CODE,
     CONF_BRIGHTNESS_INC_CODE,
@@ -54,11 +61,31 @@ class RewireLight(RewireEntity, LightEntity):
         super().__init__(coordinator, entry_id)
 
         data = coordinator.config_entry.data
+        self._actions = data.get(CONF_ACTIONS, [])
 
-        self._power_on_code = data.get(CONF_POWER_ON_CODE)
-        self._power_off_code = data.get(CONF_POWER_OFF_CODE)
-        self._brightness_inc_code = data.get(CONF_BRIGHTNESS_INC_CODE)
-        self._brightness_dec_code = data.get(CONF_BRIGHTNESS_DEC_CODE)
+        self._power_on_code = None
+        self._power_off_code = None
+        self._brightness_inc_code = None
+        self._brightness_dec_code = None
+
+        if self._actions:
+            for action in self._actions:
+                atype = action.get(CONF_ACTION_TYPE)
+                if atype == ACTION_TYPE_POWER:
+                    self._power_on_code = action.get(CONF_POWER_ON_CODE)
+                    self._power_off_code = action.get(CONF_POWER_OFF_CODE)
+                elif atype == ACTION_TYPE_BRIGHTNESS:
+                    self._brightness_inc_code = action.get(CONF_BRIGHTNESS_INC_CODE)
+                    self._brightness_dec_code = action.get(CONF_BRIGHTNESS_DEC_CODE)
+                elif atype == ACTION_TYPE_INC_DEC and "brightness" in action.get("name", "").lower():
+                    # Legacy fallback or if user chose Inc/Dec
+                    self._brightness_inc_code = action.get(CONF_ACTION_CODE_INC)
+                    self._brightness_dec_code = action.get(CONF_ACTION_CODE_DEC)
+        else:
+            self._power_on_code = data.get(CONF_POWER_ON_CODE)
+            self._power_off_code = data.get(CONF_POWER_OFF_CODE)
+            self._brightness_inc_code = data.get(CONF_BRIGHTNESS_INC_CODE)
+            self._brightness_dec_code = data.get(CONF_BRIGHTNESS_DEC_CODE)
 
         self._attr_unique_id = f"{DOMAIN}_{entry_id}_light"
         self._attr_name = data.get("name")

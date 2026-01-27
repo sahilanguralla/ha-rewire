@@ -14,6 +14,11 @@ from homeassistant.helpers import script
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
+    ACTION_TYPE_OSCILLATE,
+    ACTION_TYPE_POWER,
+    ACTION_TYPE_TEMP,
+    CONF_ACTION_TYPE,
+    CONF_ACTIONS,
     CONF_BLASTER_ACTION,
     CONF_DEVICE_TYPE,
     CONF_MAX_TEMP,
@@ -61,11 +66,42 @@ class RewireClimate(RewireEntity, ClimateEntity):
         data = coordinator.config_entry.data
 
         self._base_features = ClimateEntityFeature(0)
+        self._actions = data.get(CONF_ACTIONS, [])
 
-        self._power_on_code = data.get(CONF_POWER_ON_CODE)
-        self._power_off_code = data.get(CONF_POWER_OFF_CODE)
-        self._temp_inc_code = data.get(CONF_TEMP_INC_CODE)
-        self._temp_dec_code = data.get(CONF_TEMP_DEC_CODE)
+        # Initialize defaults
+        self._power_on_code = None
+        self._power_off_code = None
+        self._temp_inc_code = None
+        self._temp_dec_code = None
+        self._oscillate_code = None
+        min_temp = 16
+        max_temp = 30
+        temp_step = 1
+
+        if self._actions:
+            # New Action-Based Config
+            for action in self._actions:
+                atype = action.get(CONF_ACTION_TYPE)
+                if atype == ACTION_TYPE_POWER:
+                    self._power_on_code = action.get(CONF_POWER_ON_CODE)
+                    self._power_off_code = action.get(CONF_POWER_OFF_CODE)
+                elif atype == ACTION_TYPE_TEMP:
+                    self._temp_inc_code = action.get(CONF_TEMP_INC_CODE)
+                    self._temp_dec_code = action.get(CONF_TEMP_DEC_CODE)
+                    min_temp = action.get(CONF_MIN_TEMP, min_temp)
+                    max_temp = action.get(CONF_MAX_TEMP, max_temp)
+                    temp_step = action.get(CONF_TEMP_STEP, temp_step)
+                elif atype == ACTION_TYPE_OSCILLATE:
+                    self._oscillate_code = action.get("ir_code")
+        else:
+            # Legacy Linear Config
+            self._power_on_code = data.get(CONF_POWER_ON_CODE)
+            self._power_off_code = data.get(CONF_POWER_OFF_CODE)
+            self._temp_inc_code = data.get(CONF_TEMP_INC_CODE)
+            self._temp_dec_code = data.get(CONF_TEMP_DEC_CODE)
+            min_temp = data.get(CONF_MIN_TEMP, 16)
+            max_temp = data.get(CONF_MAX_TEMP, 30)
+            temp_step = data.get(CONF_TEMP_STEP, 1)
 
         self._attr_unique_id = f"{DOMAIN}_{entry_id}_climate"
         self._attr_name = data.get("name")
@@ -78,10 +114,17 @@ class RewireClimate(RewireEntity, ClimateEntity):
 
         if self._temp_inc_code and self._temp_dec_code:
             self._base_features |= ClimateEntityFeature.TARGET_TEMPERATURE
-            self._attr_min_temp = data.get(CONF_MIN_TEMP, 16)
-            self._attr_max_temp = data.get(CONF_MAX_TEMP, 30)
-            self._attr_target_temperature_step = data.get(CONF_TEMP_STEP, 1)
+        if self._temp_inc_code and self._temp_dec_code:
+            self._base_features |= ClimateEntityFeature.TARGET_TEMPERATURE
+            self._attr_min_temp = min_temp
+            self._attr_max_temp = max_temp
+            self._attr_target_temperature_step = temp_step
             self._attr_target_temperature = self._attr_min_temp
+
+        if self._oscillate_code:
+            self._base_features |= ClimateEntityFeature.SWING_MODE
+            self._attr_swing_modes = ["off", "on"]
+            self._attr_swing_mode = "off"
 
         self._attr_temperature_unit = coordinator.hass.config.units.temperature_unit
         self._attr_hvac_mode = HVACMode.OFF
@@ -191,4 +234,23 @@ class RewireClimate(RewireEntity, ClimateEntity):
             await self._send_code(code, repeats=1)
 
         self._attr_target_temperature += direction * self._attr_target_temperature_step
+        self.async_write_ha_state()
+
+    async def async_set_swing_mode(self, swing_mode: str) -> None:
+        """Set new target swing operation."""
+        if not self._oscillate_code:
+            return
+
+        if self._attr_hvac_mode == HVACMode.OFF:
+            _LOGGER.debug("Swing mode ignored because AC is OFF")
+            return
+
+        # Assuming single code toggles oscillation
+        # In a real scenario, might need ON/OFF codes.
+        # But for now, user provides "Oscillate Code" which usually toggles.
+        # If we want exact state, we assume the user syncs it.
+        # Or we send the code.
+        await self._send_code(self._oscillate_code)
+
+        self._attr_swing_mode = swing_mode
         self.async_write_ha_state()

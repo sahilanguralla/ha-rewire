@@ -15,6 +15,11 @@ from homeassistant.util.percentage import (
 )
 
 from .const import (
+    ACTION_TYPE_OSCILLATE,
+    ACTION_TYPE_POWER,
+    ACTION_TYPE_SPEED,
+    CONF_ACTION_TYPE,
+    CONF_ACTIONS,
     CONF_BLASTER_ACTION,
     CONF_DEVICE_TYPE,
     CONF_MAX_SPEED,
@@ -61,12 +66,40 @@ class RewireFan(RewireEntity, FanEntity):
         super().__init__(coordinator, entry_id)
 
         data = coordinator.config_entry.data
+        self._actions = data.get(CONF_ACTIONS, [])
 
-        self._power_on_code = data.get(CONF_POWER_ON_CODE)
-        self._power_off_code = data.get(CONF_POWER_OFF_CODE)
-        self._oscillate_code = data.get(CONF_OSCILLATE_CODE)
-        self._speed_inc_code = data.get(CONF_SPEED_INC_CODE)
-        self._speed_dec_code = data.get(CONF_SPEED_DEC_CODE)
+        self._power_on_code = None
+        self._power_off_code = None
+        self._oscillate_code = None
+        self._speed_inc_code = None
+        self._speed_dec_code = None
+        min_speed = 1
+        max_speed = 10
+        speed_step = 1
+
+        if self._actions:
+            for action in self._actions:
+                atype = action.get(CONF_ACTION_TYPE)
+                if atype == ACTION_TYPE_POWER:
+                    self._power_on_code = action.get(CONF_POWER_ON_CODE)
+                    self._power_off_code = action.get(CONF_POWER_OFF_CODE)
+                elif atype == ACTION_TYPE_SPEED:
+                    self._speed_inc_code = action.get(CONF_SPEED_INC_CODE)
+                    self._speed_dec_code = action.get(CONF_SPEED_DEC_CODE)
+                    min_speed = action.get(CONF_MIN_SPEED, min_speed)
+                    max_speed = action.get(CONF_MAX_SPEED, max_speed)
+                    speed_step = action.get(CONF_SPEED_STEP, speed_step)
+                elif atype == ACTION_TYPE_OSCILLATE:
+                    self._oscillate_code = action.get("ir_code")
+        else:
+            self._power_on_code = data.get(CONF_POWER_ON_CODE)
+            self._power_off_code = data.get(CONF_POWER_OFF_CODE)
+            self._oscillate_code = data.get(CONF_OSCILLATE_CODE)
+            self._speed_inc_code = data.get(CONF_SPEED_INC_CODE)
+            self._speed_dec_code = data.get(CONF_SPEED_DEC_CODE)
+            min_speed = data.get(CONF_MIN_SPEED, 1)
+            max_speed = data.get(CONF_MAX_SPEED, 10)
+            speed_step = data.get(CONF_SPEED_STEP, 1)
 
         # Unique ID based on the entry
         self._attr_unique_id = f"{DOMAIN}_{entry_id}_fan"
@@ -81,9 +114,9 @@ class RewireFan(RewireEntity, FanEntity):
 
         if self._speed_inc_code and self._speed_dec_code:
             self._attr_supported_features |= FanEntityFeature.SET_SPEED
-            self._speed_min = data.get(CONF_MIN_SPEED, 1)
-            self._speed_max = data.get(CONF_MAX_SPEED, 10)
-            self._speed_step = data.get(CONF_SPEED_STEP, 1)
+            self._speed_min = min_speed
+            self._speed_max = max_speed
+            self._speed_step = speed_step
             self._speed_range = (self._speed_min, self._speed_max)
 
         self._attr_is_on = False

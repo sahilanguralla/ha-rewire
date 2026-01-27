@@ -9,16 +9,19 @@ from homeassistant.core import callback
 from homeassistant.helpers import selector
 
 from .const import (
+    ACTION_TYPE_BRIGHTNESS,
     ACTION_TYPE_BUTTON,
     ACTION_TYPE_INC_DEC,
+    ACTION_TYPE_MODE,
+    ACTION_TYPE_OSCILLATE,
     ACTION_TYPE_POWER,
+    ACTION_TYPE_SPEED,
+    ACTION_TYPE_TEMP,
     ACTION_TYPE_TOGGLE,
     ACTION_TYPES,
     CONF_ACTION_CODE,
     CONF_ACTION_CODE_DEC,
     CONF_ACTION_CODE_INC,
-    CONF_ACTION_CODE_OFF,
-    CONF_ACTION_CODE_ON,
     CONF_ACTION_NAME,
     CONF_ACTION_TYPE,
     CONF_ACTIONS,
@@ -32,7 +35,6 @@ from .const import (
     CONF_MIN_SPEED,
     CONF_MIN_TEMP,
     CONF_MIN_VALUE,
-    CONF_OSCILLATE_CODE,
     CONF_POWER_OFF_CODE,
     CONF_POWER_ON_CODE,
     CONF_SPEED_DEC_CODE,
@@ -129,17 +131,9 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self.config_data[CONF_BLASTER_ACTION] = [action_config]
 
             # Route based on device type
-            device_type = self.config_data.get(CONF_DEVICE_TYPE)
-            if device_type == DEVICE_TYPE_FAN:
-                return await self.async_step_configure_fan()
-            elif device_type == DEVICE_TYPE_AC:
-                return await self.async_step_configure_climate()
-            elif device_type == DEVICE_TYPE_LIGHT:  # Assuming you added this constant
-                return await self.async_step_configure_light()
-            elif device_type == "light":  # Fallback if constant missing
-                return await self.async_step_configure_light()
-            else:
-                return await self.async_step_actions()
+            # device_type = self.config_data.get(CONF_DEVICE_TYPE)
+            # All device types now go to the generic action builder
+            return await self.async_step_actions()
 
         # ... (Device discovery logic same as before) ...
         device_id = self.config_data["blaster_device_id"]
@@ -178,39 +172,36 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(step_id="blaster_action", data_schema=schema, errors=errors)
 
-    async def async_step_configure_fan(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Configure Fan specific codes."""
+    async def async_step_configure_power(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Configure Power action."""
         if user_input is not None:
-            self.config_data.update(user_input)
-            return self.async_create_entry(title=self.config_data["name"], data=self.config_data)
+            user_input[CONF_ACTION_TYPE] = ACTION_TYPE_POWER
+            user_input[CONF_ACTION_NAME] = "Power"
+            self.actions.append(user_input)
+            return await self.async_step_actions()
 
         schema = vol.Schema(
             {
-                vol.Required(CONF_POWER_ON_CODE): str,
-                vol.Required(CONF_POWER_OFF_CODE): str,
-                vol.Optional(CONF_OSCILLATE_CODE): str,
-                vol.Optional(CONF_SPEED_INC_CODE): str,
-                vol.Optional(CONF_SPEED_DEC_CODE): str,
-                vol.Required(CONF_MIN_SPEED, default=1): int,
-                vol.Required(CONF_MAX_SPEED, default=10): int,
-                vol.Required(CONF_SPEED_STEP, default=1): int,
+                vol.Required("separate_codes", default=True): bool,
+                vol.Optional(CONF_POWER_ON_CODE): str,
+                vol.Optional(CONF_POWER_OFF_CODE): str,
             }
         )
-        return self.async_show_form(step_id="configure_fan", data_schema=schema)
+        return self.async_show_form(step_id="configure_power", data_schema=schema)
 
-    async def async_step_configure_climate(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Configure Climate specific codes."""
+    async def async_step_configure_temperature(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Configure Temperature action."""
         if user_input is not None:
-            self.config_data.update(user_input)
-            return self.async_create_entry(title=self.config_data["name"], data=self.config_data)
+            user_input[CONF_ACTION_TYPE] = ACTION_TYPE_TEMP
+            user_input[CONF_ACTION_NAME] = "Temperature"
+            self.actions.append(user_input)
+            return await self.async_step_actions()
 
         default_min = 16 if self.hass.config.units.temperature_unit == UnitOfTemperature.CELSIUS else 60
         default_max = 30 if self.hass.config.units.temperature_unit == UnitOfTemperature.CELSIUS else 86
 
         schema = vol.Schema(
             {
-                vol.Required(CONF_POWER_ON_CODE): str,
-                vol.Required(CONF_POWER_OFF_CODE): str,
                 vol.Required(CONF_TEMP_INC_CODE): str,
                 vol.Required(CONF_TEMP_DEC_CODE): str,
                 vol.Required(CONF_MIN_TEMP, default=default_min): selector.NumberSelector(
@@ -235,30 +226,149 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         step=0.1,
                     )
                 ),
-                vol.Optional(CONF_SPEED_INC_CODE): str,
-                vol.Optional(CONF_SPEED_DEC_CODE): str,
+            }
+        )
+        return self.async_show_form(step_id="configure_temperature", data_schema=schema)
+
+    async def async_step_configure_toggle(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Configure Toggle action."""
+        if user_input is not None:
+            user_input[CONF_ACTION_TYPE] = ACTION_TYPE_TOGGLE
+            self.actions.append(user_input)
+            return await self.async_step_actions()
+
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_ACTION_NAME): str,
+                vol.Required(CONF_ACTION_CODE): str,
+            }
+        )
+
+        return self.async_show_form(step_id="configure_toggle", data_schema=schema)
+
+    async def async_step_configure_speed(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Configure Speed action."""
+        if user_input is not None:
+            user_input[CONF_ACTION_TYPE] = ACTION_TYPE_SPEED
+            user_input[CONF_ACTION_NAME] = "Speed"
+            self.actions.append(user_input)
+            return await self.async_step_actions()
+
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_SPEED_INC_CODE): str,
+                vol.Required(CONF_SPEED_DEC_CODE): str,
                 vol.Required(CONF_MIN_SPEED, default=1): int,
                 vol.Required(CONF_MAX_SPEED, default=10): int,
                 vol.Required(CONF_SPEED_STEP, default=1): int,
             }
         )
-        return self.async_show_form(step_id="configure_climate", data_schema=schema)
+        return self.async_show_form(step_id="configure_speed", data_schema=schema)
 
-    async def async_step_configure_light(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Configure Light specific codes."""
+    async def async_step_configure_mode(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Configure Mode action."""
         if user_input is not None:
-            self.config_data.update(user_input)
-            return self.async_create_entry(title=self.config_data["name"], data=self.config_data)
+            # Mode handling might need to be loop-based if multiple modes are added one by one
+            # But for now, let's assume one separate action entry per mode?
+            # Or one action entry containing ALL modes?
+            # The plan was: "Implement async_step_configure_mode (Heat/Cool/Custom + Temp Overrides)"
+            # If we follow the pattern, one "Mode" action containing a list of modes?
+            # Or user adds "Heat" mode action, "Cool" mode action?
+            # Let's align with "Action-Based": Defining a "Mode" Capability.
+            # But usually a device has "Mode" button which cycles, OR discrete codes.
+            # If discrete, we need a map.
+            # Let's assume discrete modes for now as separate actions?
+            # "Action Name: Heat", "Code: ...". Type: Mode.
+            user_input[CONF_ACTION_TYPE] = ACTION_TYPE_MODE
+            self.actions.append(user_input)
+            return await self.async_step_actions()
 
         schema = vol.Schema(
             {
-                vol.Required(CONF_POWER_ON_CODE): str,
-                vol.Required(CONF_POWER_OFF_CODE): str,
-                vol.Optional(CONF_BRIGHTNESS_INC_CODE): str,
-                vol.Optional(CONF_BRIGHTNESS_DEC_CODE): str,
+                vol.Required("mode_name"): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=["off", "auto", "cool", "heat", "dry", "fan_only"],
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                        custom_value=True,
+                    )
+                ),
+                vol.Required(CONF_ACTION_CODE): str,
             }
         )
-        return self.async_show_form(step_id="configure_light", data_schema=schema)
+        return self.async_show_form(step_id="configure_mode", data_schema=schema)
+
+    async def async_step_configure_oscillate(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Configure Oscillate action."""
+        if user_input is not None:
+            user_input[CONF_ACTION_TYPE] = ACTION_TYPE_OSCILLATE
+            self.actions.append(user_input)
+            return await self.async_step_actions()
+
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_ACTION_NAME, default="Oscillate"): str,
+                vol.Required(CONF_ACTION_CODE): str,
+            }
+        )
+        return self.async_show_form(step_id="configure_oscillate", data_schema=schema)
+
+    async def async_step_configure_brightness(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Configure Brightness action."""
+        if user_input is not None:
+            user_input[CONF_ACTION_TYPE] = ACTION_TYPE_BRIGHTNESS
+            user_input[CONF_ACTION_NAME] = "Brightness"
+            self.actions.append(user_input)
+            return await self.async_step_actions()
+
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_BRIGHTNESS_INC_CODE): str,
+                vol.Required(CONF_BRIGHTNESS_DEC_CODE): str,
+            }
+        )
+        return self.async_show_form(step_id="configure_brightness", data_schema=schema)
+
+    def _get_available_actions(self, exclude_power: bool = False) -> list[str]:
+        """Get list of available actions based on device type."""
+        device_type = self.config_data.get(CONF_DEVICE_TYPE)
+
+        # Default full list
+        allowed = set(ACTION_TYPES)
+
+        if device_type == DEVICE_TYPE_AC:
+            # AC: Power, Temp, Mode, Speed, Oscillate, Toggle
+            allowed = {
+                ACTION_TYPE_POWER,
+                ACTION_TYPE_TEMP,
+                ACTION_TYPE_MODE,
+                ACTION_TYPE_SPEED,
+                ACTION_TYPE_OSCILLATE,
+                ACTION_TYPE_TOGGLE,
+            }
+        elif device_type == DEVICE_TYPE_FAN:
+            # Fan: Power, Speed, Oscillate, Toggle
+            allowed = {
+                ACTION_TYPE_POWER,
+                ACTION_TYPE_SPEED,
+                ACTION_TYPE_OSCILLATE,
+                ACTION_TYPE_TOGGLE,
+            }
+        elif device_type == DEVICE_TYPE_LIGHT:
+            # Light: Power, Brightness, Toggle
+            allowed = {
+                ACTION_TYPE_POWER,
+                ACTION_TYPE_BRIGHTNESS,
+                ACTION_TYPE_TOGGLE,
+            }
+        else:  # Other
+            # Other: All Actions
+            allowed = set(ACTION_TYPES)
+
+        if exclude_power and ACTION_TYPE_POWER in allowed:
+            allowed.remove(ACTION_TYPE_POWER)
+
+        # Return sorted list for UI
+        return sorted(list(allowed))
 
     # Legacy / Other Actions Steps
     async def async_step_actions(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -308,31 +418,45 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self.current_action_type = user_input[CONF_ACTION_TYPE]
             if self.current_action_type == ACTION_TYPE_POWER:
+                # Check if power action already exists
                 for action in self.actions:
                     if action.get(CONF_ACTION_TYPE) == ACTION_TYPE_POWER:
+                        # Filter out Power from the fallback list if it exists
+                        available_actions = self._get_available_actions(exclude_power=True)
                         return self.async_show_form(
                             step_id="add_action",
                             data_schema=vol.Schema(
-                                {
-                                    vol.Required(CONF_ACTION_TYPE, default=ACTION_TYPE_BUTTON): vol.In(
-                                        [t for t in ACTION_TYPES if t != ACTION_TYPE_POWER]
-                                    )
-                                }
+                                {vol.Required(CONF_ACTION_TYPE, default=ACTION_TYPE_BUTTON): vol.In(available_actions)}
                             ),
                             errors={"base": "power_action_exists"},
                         )
+                return await self.async_step_configure_power()
+            elif self.current_action_type == ACTION_TYPE_TEMP:
+                return await self.async_step_configure_temperature()
+            elif self.current_action_type == ACTION_TYPE_SPEED:
+                return await self.async_step_configure_speed()
+            elif self.current_action_type == ACTION_TYPE_MODE:
+                return await self.async_step_configure_mode()
+            elif self.current_action_type == ACTION_TYPE_OSCILLATE:
+                return await self.async_step_configure_oscillate()
+            elif self.current_action_type == ACTION_TYPE_BRIGHTNESS:
+                return await self.async_step_configure_brightness()
+            elif self.current_action_type == ACTION_TYPE_TOGGLE:
+                return await self.async_step_configure_toggle()
+
             return await self.async_step_configure_action()
 
+        available_actions = self._get_available_actions()
         schema = vol.Schema(
             {
-                vol.Required(CONF_ACTION_TYPE, default=ACTION_TYPE_BUTTON): vol.In(ACTION_TYPES),
+                vol.Required(CONF_ACTION_TYPE, default=available_actions[0]): vol.In(available_actions),
             }
         )
 
         return self.async_show_form(step_id="add_action", data_schema=schema)
 
     async def async_step_configure_action(self, user_input: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Configure the details for the selected action type."""
+        """Configure Generic details (Button, Inc/Dec)."""
         if user_input is not None:
             user_input[CONF_ACTION_TYPE] = self.current_action_type
             self.actions.append(user_input)
@@ -340,18 +464,7 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         data_schema = {vol.Required(CONF_ACTION_NAME): str}
 
-        if self.current_action_type == ACTION_TYPE_POWER:
-            data_schema.update(
-                {
-                    vol.Required("separate_codes", default=True): bool,
-                    vol.Optional(CONF_ACTION_CODE_ON): str,
-                    vol.Optional(CONF_ACTION_CODE_OFF): str,
-                    vol.Optional(CONF_ACTION_CODE): str,
-                }
-            )
-        elif self.current_action_type == ACTION_TYPE_TOGGLE:
-            data_schema.update({vol.Required(CONF_ACTION_CODE): str})
-        elif self.current_action_type == ACTION_TYPE_INC_DEC:
+        if self.current_action_type == ACTION_TYPE_INC_DEC:
             data_schema.update(
                 {
                     vol.Required(CONF_MIN_VALUE, default=10): int,
@@ -361,7 +474,7 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_ACTION_CODE_DEC): str,
                 }
             )
-        elif self.current_action_type == ACTION_TYPE_BUTTON:
+        else:  # Button and fallback
             data_schema.update({vol.Required(CONF_ACTION_CODE): str})
 
         return self.async_show_form(
