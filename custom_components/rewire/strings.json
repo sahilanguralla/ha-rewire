@@ -96,75 +96,77 @@
           "action_code_inc": "Increase Code",
           "action_code_dec": "Decrease Code"
         }
-      }
-    },
-    "configure_power": {
-      "title": "Configure Power",
-      "description": "Configure power control. You can use a single code for toggle, or separate codes for On/Off.",
-      "data": {
-        "separate_codes": "Use separate codes for On/Off?",
-        "power_on_code": "Power On Code (or Toggle Code if single)",
-        "power_off_code": "Power Off Code"
-      }
-    },
-    "configure_temperature": {
-      "title": "Configure Temperature",
-      "description": "Configure temperature control.",
-      "data": {
-        "min_temp": "Minimum Temperature",
-        "max_temp": "Maximum Temperature",
-        "temp_step": "Temperature Step",
-        "temp_inc_code": "Temperature Increase Code",
-        "temp_dec_code": "Temperature Decrease Code"
-      }
-    },
-    "configure_speed": {
-      "title": "Configure Speed",
-      "description": "Configure fan speed control.",
-      "data": {
-        "min_speed": "Minimum Speed (0-100)",
-        "max_speed": "Maximum Speed (0-100)",
-        "speed_step": "Speed Step",
-        "speed_inc_code": "Speed Increase Code",
-        "speed_dec_code": "Speed Decrease Code"
-      }
-    },
-    "configure_toggle": {
-      "title": "Configure Toggle",
-      "description": "Configure a simple toggle action.",
-      "data": {
-        "name": "Action Name",
-        "ir_code": "IR Code"
-      }
-    },
-    "configure_mode": {
-      "title": "Configure Mode",
-      "description": "Configure mode selection.",
-      "data": {
-        "mode_name": "Mode Name (e.g. Heat, Cool)",
-        "ir_code": "IR Code"
-      }
-    },
-    "configure_oscillate": {
-      "title": "Configure Oscillate",
-      "description": "Configure oscillation control.",
-      "data": {
-        "name": "Action Name",
-        "ir_code": "Oscillate Code"
-      }
-    },
-    "configure_brightness": {
-      "title": "Configure Brightness",
-      "description": "Configure brightness control.",
-      "data": {
-        "brightness_inc_code": "Increase Code",
-        "brightness_dec_code": "Decrease Code"
+      },
+      "configure_power": {
+        "title": "Configure Power",
+        "description": "Configure power control. You can use a single code for toggle, or separate codes for On/Off.",
+        "data": {
+          "separate_codes": "Use separate codes for On/Off?",
+          "power_on_code": "Power On Code (or Toggle Code if single)",
+          "power_off_code": "Power Off Code"
+        }
+      },
+      "configure_temperature": {
+        "title": "Configure Temperature",
+        "description": "Configure temperature control.",
+        "data": {
+          "min_temp": "Minimum Temperature",
+          "max_temp": "Maximum Temperature",
+          "temp_step": "Temperature Step",
+          "temp_inc_code": "Temperature Increase Code",
+          "temp_dec_code": "Temperature Decrease Code"
+        }
+      },
+      "configure_speed": {
+        "title": "Configure Speed",
+        "description": "Configure fan speed control.",
+        "data": {
+          "min_speed": "Minimum Speed (0-100)",
+          "max_speed": "Maximum Speed (0-100)",
+          "speed_step": "Speed Step",
+          "speed_inc_code": "Speed Increase Code",
+          "speed_dec_code": "Speed Decrease Code"
+        }
+      },
+      "configure_toggle": {
+        "title": "Configure Toggle",
+        "description": "Configure a simple toggle action.",
+        "data": {
+          "name": "Action Name",
+          "ir_code": "IR Code"
+        }
+      },
+      "configure_mode": {
+        "title": "Configure Mode",
+        "description": "Configure mode selection.",
+        "data": {
+          "mode_name": "Mode Name (e.g. Heat, Cool)",
+          "ir_code": "IR Code"
+        }
+      },
+      "configure_oscillate": {
+        "title": "Configure Oscillate",
+        "description": "Configure oscillation control.",
+        "data": {
+          "name": "Action Name",
+          "ir_code": "Oscillate Code"
+        }
+      },
+      "configure_brightness": {
+        "title": "Configure Brightness",
+        "description": "Configure brightness control.",
+        "data": {
+          "brightness_inc_code": "Increase Code",
+          "brightness_dec_code": "Decrease Code"
+        }
       }
     },
     "error": {
       "invalid_ir_code": "Invalid IR code format",
       "no_actions": "At least one action is required",
-      "power_action_exists": "Only one Power action is allowed per device"
+      "power_action_exists": "Only one Power action is allowed per device",
+      "ac_requires_temp": "AC devices must have a Temperature action configured",
+      "ac_requires_power": "AC devices must have a Power or Mode action to turn on"
     },
     "abort": {
       "already_configured": "Device is already configured"

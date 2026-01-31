@@ -108,9 +108,17 @@ class RewireClimate(RewireEntity, ClimateEntity):
         self._attr_supported_features = ClimateEntityFeature(0)
         self._attr_hvac_modes = []
 
-        if self._power_on_code and self._power_off_code:
+        if self._power_on_code:
             self._base_features |= ClimateEntityFeature.TURN_ON | ClimateEntityFeature.TURN_OFF
+            # If we have power control but no specific mode control, assume Cool/Off (classic AC)
+            # or Auto/Off if it's a generic heater/cooler.
+            # Defaulting to Cool/Off + Heat for now as per previous logic, but allowing it
+            # even if only power_on_code (toggle) is present.
             self._attr_hvac_modes = [HVACMode.OFF, HVACMode.COOL, HVACMode.HEAT]
+
+            # If single code (toggle), make sure power_off uses it too if not defined
+            if not self._power_off_code:
+                self._power_off_code = self._power_on_code
 
         if self._temp_inc_code and self._temp_dec_code:
             self._base_features |= ClimateEntityFeature.TARGET_TEMPERATURE

@@ -385,8 +385,28 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if not self.actions:
                 errors["base"] = "no_actions"
             else:
-                self.config_data[CONF_ACTIONS] = self.actions
-                return self.async_create_entry(title=self.config_data["name"], data=self.config_data)
+                # Validation for AC
+                if self.config_data.get(CONF_DEVICE_TYPE) == DEVICE_TYPE_AC:
+                    has_temp = False
+                    has_power = False
+                    has_mode = False
+                    for action in self.actions:
+                        atype = action.get(CONF_ACTION_TYPE)
+                        if atype == ACTION_TYPE_TEMP:
+                            has_temp = True
+                        elif atype == ACTION_TYPE_POWER:
+                            has_power = True
+                        elif atype == ACTION_TYPE_MODE:
+                            has_mode = True
+
+                    if not has_temp:
+                        errors["base"] = "ac_requires_temp"
+                    elif not has_power and not has_mode:
+                        errors["base"] = "ac_requires_power"
+
+                if not errors:
+                    self.config_data[CONF_ACTIONS] = self.actions
+                    return self.async_create_entry(title=self.config_data["name"], data=self.config_data)
 
         actions_str = (
             "\n".join([f"- {a[CONF_ACTION_NAME]}" for a in self.actions]) if self.actions else "No actions added yet."
@@ -426,7 +446,15 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         return self.async_show_form(
                             step_id="add_action",
                             data_schema=vol.Schema(
-                                {vol.Required(CONF_ACTION_TYPE, default=ACTION_TYPE_BUTTON): vol.In(available_actions)}
+                                {
+                                    vol.Required(CONF_ACTION_TYPE, default=ACTION_TYPE_BUTTON): selector.SelectSelector(
+                                        selector.SelectSelectorConfig(
+                                            options=available_actions,
+                                            translation_key="action_type",
+                                            mode=selector.SelectSelectorMode.DROPDOWN,
+                                        )
+                                    )
+                                }
                             ),
                             errors={"base": "power_action_exists"},
                         )
@@ -449,7 +477,13 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         available_actions = self._get_available_actions()
         schema = vol.Schema(
             {
-                vol.Required(CONF_ACTION_TYPE, default=available_actions[0]): vol.In(available_actions),
+                vol.Required(CONF_ACTION_TYPE, default=available_actions[0]): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=available_actions,
+                        translation_key="action_type",
+                        mode=selector.SelectSelectorMode.DROPDOWN,
+                    )
+                )
             }
         )
 

@@ -1,6 +1,6 @@
 {
-  "title": "RewIRe",
   "config": {
+    "title": "RewIRe",
     "step": {
       "user": {
         "title": "Device Setup",

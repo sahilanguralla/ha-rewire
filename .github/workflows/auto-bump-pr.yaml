@@ -52,7 +52,7 @@ jobs:
             # Find all manifest.json files in custom_components and add them
             find custom_components -name "manifest.json" -type f | xargs git add
             git add pyproject.toml
-            git commit -m "ci: bump version [skip ci]" || echo "No changes to commit"
+            git commit -m "ci: bump version" || echo "No changes to commit"
             git push
           else
             echo "bumped=false" >> $GITHUB_OUTPUT
