@@ -5,8 +5,11 @@ on:
     types: [opened, synchronize]
     branches: [main]
 
+  workflow_dispatch:
+
 jobs:
   bump-version:
+    name: Bump version and create changelog with commitizen
     if: "!startsWith(github.event.head_commit.message, 'ci: bump version')"
     runs-on: ubuntu-latest
     permissions:
