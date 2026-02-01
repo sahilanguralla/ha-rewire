@@ -114,7 +114,8 @@
           "max_temp": "Maximum Temperature",
           "temp_step": "Temperature Step",
           "temp_inc_code": "Temperature Increase Code",
-          "temp_dec_code": "Temperature Decrease Code"
+          "temp_dec_code": "Temperature Decrease Code",
+          "temp_unit": "Temperature Unit"
         }
       },
       "configure_speed": {
@@ -196,6 +197,12 @@
     }
   },
   "selector": {
+    "temp_unit": {
+      "options": {
+        "celsius": "Celsius (°C)",
+        "fahrenheit": "Fahrenheit (°F)"
+      }
+    },
     "device_type": {
       "options": {
         "fan": "Fan",

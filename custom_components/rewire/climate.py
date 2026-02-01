@@ -9,6 +9,7 @@ from homeassistant.components.climate import (
     HVACMode,
 )
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import script
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -35,6 +36,7 @@ from .const import (
     CONF_TEMP_DEC_CODE,
     CONF_TEMP_INC_CODE,
     CONF_TEMP_STEP,
+    CONF_TEMP_UNIT,
     DEVICE_TYPE_AC,
     DOMAIN,
 )
@@ -83,6 +85,7 @@ class RewireClimate(RewireEntity, ClimateEntity):
         self._oscillate_code = None
         self._speed_inc_code = None
         self._speed_dec_code = None
+        self._temp_unit = None  # Store configured temperature unit
         min_temp = 16
         max_temp = 30
         temp_step = 1
@@ -105,6 +108,11 @@ class RewireClimate(RewireEntity, ClimateEntity):
                     min_temp = action.get(CONF_MIN_TEMP, min_temp)
                     max_temp = action.get(CONF_MAX_TEMP, max_temp)
                     temp_step = action.get(CONF_TEMP_STEP, temp_step)
+                    # Read configured temperature unit
+                    temp_unit_str = action.get(CONF_TEMP_UNIT, "celsius")
+                    self._temp_unit = (
+                        UnitOfTemperature.CELSIUS if temp_unit_str == "celsius" else UnitOfTemperature.FAHRENHEIT
+                    )
                 elif atype == ACTION_TYPE_OSCILLATE:
                     self._oscillate_code = action.get("ir_code")
                 elif atype == ACTION_TYPE_SPEED:
@@ -171,7 +179,9 @@ class RewireClimate(RewireEntity, ClimateEntity):
             self._attr_swing_modes = ["off", "on"]
             self._attr_swing_mode = "off"
 
-        self._attr_temperature_unit = coordinator.hass.config.units.temperature_unit
+        self._attr_temperature_unit = (
+            self._temp_unit if self._temp_unit else coordinator.hass.config.units.temperature_unit
+        )
         self._attr_hvac_mode = HVACMode.OFF
 
         # Fan Mode Setup

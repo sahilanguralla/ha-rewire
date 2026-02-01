@@ -45,6 +45,7 @@ from .const import (
     CONF_TEMP_DEC_CODE,
     CONF_TEMP_INC_CODE,
     CONF_TEMP_STEP,
+    CONF_TEMP_UNIT,
     DEVICE_TYPE_AC,
     DEVICE_TYPE_FAN,
     DEVICE_TYPE_LIGHT,
@@ -205,21 +206,20 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             {
                 vol.Required(CONF_TEMP_INC_CODE): str,
                 vol.Required(CONF_TEMP_DEC_CODE): str,
-                vol.Required(CONF_MIN_TEMP, default=default_min): selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        mode=selector.NumberSelectorMode.BOX,
-                        unit_of_measurement=self.hass.config.units.temperature_unit,
-                        step=1,
+                vol.Required(CONF_MIN_TEMP, default=default_min): int,
+                vol.Required(CONF_MAX_TEMP, default=default_max): int,
+                vol.Required(CONF_TEMP_STEP, default=1): int,
+                vol.Required(CONF_TEMP_UNIT, default="celsius"): selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=["celsius", "fahrenheit"],
+                        translation_key="temp_unit",
+                        mode=selector.SelectSelectorMode.DROPDOWN,
                     )
                 ),
-                vol.Required(CONF_MAX_TEMP, default=default_max): selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        mode=selector.NumberSelectorMode.BOX,
-                        unit_of_measurement=self.hass.config.units.temperature_unit,
-                        step=1,
-                    )
-                ),
-                vol.Required(CONF_TEMP_STEP, default=1): selector.NumberSelector(
+                vol.Optional(
+                    "delay",
+                    default=0.0,
+                ): selector.NumberSelector(
                     selector.NumberSelectorConfig(
                         mode=selector.NumberSelectorMode.BOX,
                         min=0.1,

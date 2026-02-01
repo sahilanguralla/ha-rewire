@@ -41,6 +41,7 @@ CONF_TEMP_STEP = "temp_step"
 CONF_MIN_SPEED = "min_speed"
 CONF_MAX_SPEED = "max_speed"
 CONF_SPEED_STEP = "speed_step"
+CONF_TEMP_UNIT = "temp_unit"
 
 # Action Types
 ACTION_TYPE_BUTTON = "button"
