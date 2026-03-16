@@ -167,21 +167,36 @@ class RewireClimate(RewireEntity, ClimateEntity):
 
         if self._temp_inc_code and self._temp_dec_code:
             self._base_features |= ClimateEntityFeature.TARGET_TEMPERATURE
-        if self._temp_inc_code and self._temp_dec_code:
-            self._base_features |= ClimateEntityFeature.TARGET_TEMPERATURE
-            self._attr_min_temp = min_temp
-            self._attr_max_temp = max_temp
-            self._attr_target_temperature_step = temp_step
+
+            system_unit = coordinator.hass.config.units.temperature_unit
+            self._attr_temperature_unit = system_unit
+
+            if self._temp_unit and self._temp_unit != system_unit:
+                from homeassistant.util.unit_conversion import TemperatureConverter
+
+                self._attr_min_temp = round(TemperatureConverter.convert(min_temp, self._temp_unit, system_unit), 2)
+                self._attr_max_temp = round(TemperatureConverter.convert(max_temp, self._temp_unit, system_unit), 2)
+
+                if self._temp_unit == UnitOfTemperature.FAHRENHEIT and system_unit == UnitOfTemperature.CELSIUS:
+                    self._attr_target_temperature_step = round(temp_step * 5 / 9, 2)
+                elif self._temp_unit == UnitOfTemperature.CELSIUS and system_unit == UnitOfTemperature.FAHRENHEIT:
+                    self._attr_target_temperature_step = round(temp_step * 9 / 5, 2)
+                else:
+                    self._attr_target_temperature_step = float(temp_step)
+            else:
+                self._attr_min_temp = float(min_temp)
+                self._attr_max_temp = float(max_temp)
+                self._attr_target_temperature_step = float(temp_step)
+
             self._attr_target_temperature = self._attr_min_temp
+        else:
+            self._attr_temperature_unit = coordinator.hass.config.units.temperature_unit
 
         if self._oscillate_code:
             self._base_features |= ClimateEntityFeature.SWING_MODE
             self._attr_swing_modes = ["off", "on"]
             self._attr_swing_mode = "off"
 
-        self._attr_temperature_unit = (
-            self._temp_unit if self._temp_unit else coordinator.hass.config.units.temperature_unit
-        )
         self._attr_hvac_mode = HVACMode.OFF
 
         # Fan Mode Setup
@@ -215,7 +230,16 @@ class RewireClimate(RewireEntity, ClimateEntity):
                 self._attr_hvac_mode = mode_map.get(mode_str, HVACMode.OFF)
 
             if "current_temp" in initial_state:
-                self._attr_target_temperature = initial_state["current_temp"]
+                configured_temp = float(initial_state["current_temp"])
+                system_unit = coordinator.hass.config.units.temperature_unit
+                if self._temp_unit and self._temp_unit != system_unit:
+                    from homeassistant.util.unit_conversion import TemperatureConverter
+
+                    self._attr_target_temperature = round(
+                        TemperatureConverter.convert(configured_temp, self._temp_unit, system_unit), 2
+                    )
+                else:
+                    self._attr_target_temperature = configured_temp
 
             if "current_fan_mode" in initial_state:
                 self._attr_fan_mode = initial_state["current_fan_mode"]
@@ -358,7 +382,7 @@ class RewireClimate(RewireEntity, ClimateEntity):
             return
 
         diff = temperature - self._attr_target_temperature
-        if diff == 0:
+        if abs(diff) < 0.01:
             return
 
         # Restrict to increasing/decreasing by only one step at a time
@@ -369,6 +393,7 @@ class RewireClimate(RewireEntity, ClimateEntity):
             await self._send_code(code, repeats=1)
 
         self._attr_target_temperature += direction * self._attr_target_temperature_step
+        self._attr_target_temperature = round(self._attr_target_temperature, 2)
         self.async_write_ha_state()
 
     async def async_set_swing_mode(self, swing_mode: str) -> None:
