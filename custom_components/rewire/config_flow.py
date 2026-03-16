@@ -289,6 +289,7 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required("mode_name"): selector.SelectSelector(
                     selector.SelectSelectorConfig(
                         options=["off", "auto", "cool", "heat", "dry", "fan_only"],
+                        translation_key="mode_name",
                         mode=selector.SelectSelectorMode.DROPDOWN,
                         custom_value=True,
                     )
