@@ -35,8 +35,7 @@
       "add_action": {
         "title": "Add New Action",
         "data": {
-          "name": "Action name (e.g., Power On)",
-          "ir_code": "IR Code (Base64)"
+          "action_type": "Action Type"
         }
       },
       "configure_climate": {
@@ -89,12 +88,12 @@
           "separate_codes": "Use separate codes for On/Off?",
           "power_on_code": "Power On Code",
           "power_off_code": "Power Off Code",
-          "action_code": "Action Code",
+          "ir_code": "Action Code",
           "min_value": "Minimum Value",
           "max_value": "Maximum Value",
           "step_value": "Step Value",
-          "action_code_inc": "Increase Code",
-          "action_code_dec": "Decrease Code"
+          "ir_code_inc": "Increase Code",
+          "ir_code_dec": "Decrease Code"
         }
       },
       "configure_power": {
@@ -115,7 +114,8 @@
           "temp_step": "Temperature Step",
           "temp_inc_code": "Temperature Increase Code",
           "temp_dec_code": "Temperature Decrease Code",
-          "temp_unit": "Temperature Unit"
+          "temp_unit": "Temperature Unit",
+          "delay": "Command Delay (seconds)"
         }
       },
       "configure_speed": {
@@ -197,6 +197,16 @@
     }
   },
   "selector": {
+    "mode_name": {
+      "options": {
+        "off": "Off",
+        "auto": "Auto",
+        "cool": "Cool",
+        "heat": "Heat",
+        "dry": "Dry",
+        "fan_only": "Fan Only"
+      }
+    },
     "temp_unit": {
       "options": {
         "celsius": "Celsius (°C)",

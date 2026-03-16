@@ -289,6 +289,7 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required("mode_name"): selector.SelectSelector(
                     selector.SelectSelectorConfig(
                         options=["off", "auto", "cool", "heat", "dry", "fan_only"],
+                        translation_key="mode_name",
                         mode=selector.SelectSelectorMode.DROPDOWN,
                         custom_value=True,
                     )
@@ -538,6 +539,7 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         min_temp = 16
         max_temp = 30
         temp_step = 1
+        temp_unit = self.hass.config.units.temperature_unit
         min_speed = 1
         max_speed = 10
         speed_step = 1
@@ -554,6 +556,10 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 min_temp = action.get(CONF_MIN_TEMP, min_temp)
                 max_temp = action.get(CONF_MAX_TEMP, max_temp)
                 temp_step = action.get(CONF_TEMP_STEP, temp_step)
+                if action.get(CONF_TEMP_UNIT) == "fahrenheit":
+                    temp_unit = UnitOfTemperature.FAHRENHEIT
+                elif action.get(CONF_TEMP_UNIT) == "celsius":
+                    temp_unit = UnitOfTemperature.CELSIUS
             elif atype == ACTION_TYPE_SPEED:
                 has_speed = True
                 min_speed = action.get(CONF_MIN_SPEED, min_speed)
@@ -580,7 +586,7 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     min=min_temp,
                     max=max_temp,
                     step=temp_step,
-                    unit_of_measurement=self.hass.config.units.temperature_unit,
+                    unit_of_measurement=temp_unit,
                 )
             )
 
