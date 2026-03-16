@@ -1,0 +1,9 @@
+.github/
+.vscode/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.devcontainer/
+dist/
+build/
+*.pyc

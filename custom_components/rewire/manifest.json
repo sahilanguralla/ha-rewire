@@ -1,17 +1,15 @@
 {
-    "domain": "rewire",
-    "name": "RewIRe",
-    "codeowners": [
-        "@sahilanguralla"
-    ],
-    "config_flow": true,
-    "dependencies": [],
-    "documentation": "https://github.com/sahilanguralla/hacs/blob/main/README.md",
-    "homekit": {},
-    "iot_class": "local_polling",
-    "issue_tracker": "https://github.com/sahilanguralla/hacs/issues",
-    "requirements": [],
-    "ssdp": [],
-    "version": "0.8.3",
-    "zeroconf": []
+  "domain": "rewire",
+  "name": "RewIRe",
+  "codeowners": ["@sahilanguralla"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/sahilanguralla/hacs/blob/main/README.md",
+  "homekit": {},
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/sahilanguralla/hacs/issues",
+  "requirements": [],
+  "ssdp": [],
+  "version": "0.8.4",
+  "zeroconf": []
 }
