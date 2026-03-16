@@ -11,6 +11,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import (
     ACTION_TYPE_INC_DEC,
+    ACTION_TYPE_SPEED,
     CONF_ACTION_CODE_DEC,
     CONF_ACTION_CODE_INC,
     CONF_ACTION_NAME,
@@ -62,11 +63,23 @@ async def async_setup_entry(
 
             if not handled:
                 entities.append(RewireNumber(coordinator, config_entry.entry_id, action))
+        elif action.get(CONF_ACTION_TYPE) == ACTION_TYPE_SPEED and device_type == DEVICE_TYPE_AC:
+            number_action = {
+                CONF_ACTION_NAME: action.get("name", "Fan Speed"),
+                CONF_ACTION_CODE_INC: action.get(CONF_SPEED_INC_CODE),
+                CONF_ACTION_CODE_DEC: action.get(CONF_SPEED_DEC_CODE),
+                CONF_MIN_VALUE: action.get(CONF_MIN_SPEED, 1),
+                CONF_MAX_VALUE: action.get(CONF_MAX_SPEED, 10),
+                CONF_STEP_VALUE: action.get(CONF_SPEED_STEP, 1),
+                "mode": NumberMode.BOX,
+            }
+            entities.append(RewireNumber(coordinator, config_entry.entry_id, number_action))
 
-    async_add_entities(entities)
+    if entities:
+        async_add_entities(entities)
 
     # Add AC Fan Speed if codes are present
-    if device_type == DEVICE_TYPE_AC:
+    if device_type == DEVICE_TYPE_AC and not actions:
         data = config_entry.data
         if data.get(CONF_SPEED_INC_CODE) and data.get(CONF_SPEED_DEC_CODE):
             action = {
@@ -76,6 +89,7 @@ async def async_setup_entry(
                 CONF_MIN_VALUE: data.get(CONF_MIN_SPEED, 1),
                 CONF_MAX_VALUE: data.get(CONF_MAX_SPEED, 10),
                 CONF_STEP_VALUE: data.get(CONF_SPEED_STEP, 1),
+                "mode": NumberMode.BOX,
             }
             async_add_entities([RewireNumber(coordinator, config_entry.entry_id, action)])
 
@@ -97,7 +111,7 @@ class RewireNumber(RewireEntity, NumberEntity, RestoreEntity):
         self._attr_native_min_value = float(action.get(CONF_MIN_VALUE, 10))
         self._attr_native_max_value = float(action.get(CONF_MAX_VALUE, 30))
         self._attr_native_step = float(action.get(CONF_STEP_VALUE, 1))
-        self._attr_mode = NumberMode.SLIDER
+        self._attr_mode = action.get("mode", NumberMode.SLIDER)
 
         # Default starting value (middle of range)
         self._attr_native_value = (self._attr_native_min_value + self._attr_native_max_value) / 2

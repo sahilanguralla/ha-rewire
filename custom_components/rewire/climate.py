@@ -326,6 +326,11 @@ class RewireClimate(RewireEntity, ClimateEntity):
 
     async def async_set_fan_mode(self, fan_mode: str) -> None:
         """Set new target fan mode."""
+        if self._attr_hvac_mode == HVACMode.OFF:
+            _LOGGER.debug("Fan mode control ignored because AC is OFF")
+            self.async_write_ha_state()
+            return
+
         if not self._speed_inc_code:
             return
 
@@ -368,6 +373,8 @@ class RewireClimate(RewireEntity, ClimateEntity):
         features = self._base_features
         if self._attr_hvac_mode == HVACMode.OFF:
             features &= ~ClimateEntityFeature.TARGET_TEMPERATURE
+            features &= ~ClimateEntityFeature.FAN_MODE
+            features &= ~ClimateEntityFeature.SWING_MODE
         return features
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
