@@ -13,6 +13,7 @@
 ## Installation
 
 ### Via HACS
+
 1.  Add this repository to `HACS > Integrations > 3 dots > Custom repositories`.
     ```
     https://github.com/sahilanguralla/hacs.git
@@ -28,35 +29,43 @@
 4.  **Step 2**: Select your **Device Type**:
 
 ### Fan
--   **Required**: Power On, Power Off.
--   **Optional**: Oscillate, Speed Increase, Speed Decrease.
--   *Result*: A `fan` entity with speed and oscillation controls.
+
+- **Required**: Power On, Power Off.
+- **Optional**: Oscillate, Speed Increase, Speed Decrease.
+- _Result_: A `fan` entity with speed and oscillation controls.
 
 ### AC (Climate)
--   **Required**: Power On, Power Off, Temperature Increase, Temperature Decrease.
--   *Result*: A `climate` entity. Temperature adjustments are sent with a 300ms delay between codes to ensure reliability.
+
+- **Required**: Power On, Power Off, Temperature Increase, Temperature Decrease.
+- _Result_: A `climate` entity. Temperature adjustments are sent with a 300ms delay between codes to ensure reliability.
 
 ### Light
--   **Required**: Power On, Power Off.
--   **Optional**: Brightness Increase, Brightness Decrease.
--   *Result*: A `light` entity.
+
+- **Required**: Power On, Power Off.
+- **Optional**: Brightness Increase, Brightness Decrease.
+- _Result_: A `light` entity.
 
 ### Other / Legacy
--   Choose "Other" to manually add individual Actions (Power Button, Speed Button, etc.).
--   This creates individual `switch`, `button`, or `number` entities for each action.
+
+- Choose "Other" to manually add individual Actions (Power Button, Speed Button, etc.).
+- This creates individual `switch`, `button`, or `number` entities for each action.
 
 ## Usage
 
 Once configured, your device appears as a standard Home Assistant entity. You can control it using Dashboard cards, Voice Assistants (Google/Alexa), or Automation.
 
 ### Syncing State
+
 Since IR is one-way, Home Assistant guesses the state based on the commands it sent. If the device state gets out of sync (e.g., someone used the physical remote):
--   Use the Home Assistant UI to toggle the device Off and On again to reset the assumed state.
+
+- Use the Home Assistant UI to toggle the device Off and On again to reset the assumed state.
 
 ## Development
 
 ### Setup
+
 1. Install development dependencies:
+
    ```bash
    pip install -r requirements_tests.txt
    ```
@@ -67,6 +76,7 @@ Since IR is one-way, Home Assistant guesses the state based on the commands it s
    ```
 
 ### Committing Changes
+
 - **Interactive Mode**: Run `git commit` (without `-m`) to launch the interactive commit wizard
 - **Manual Mode**: Run `git commit -m "feat(scope): description"` to write your own message
 - All commits are validated against [Conventional Commits](https://www.conventionalcommits.org/) format
