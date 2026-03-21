@@ -1,4 +1,5 @@
 """Config flow for RewIRe."""
+
 import logging
 from typing import Any, Dict, Optional
 
@@ -288,13 +289,16 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             {
                 vol.Required("mode_name"): selector.SelectSelector(
                     selector.SelectSelectorConfig(
-                        options=["off", "auto", "cool", "heat", "dry", "fan_only"],
+                        options=["auto", "cool", "heat", "dry", "fan_only"],
                         translation_key="mode_name",
                         mode=selector.SelectSelectorMode.DROPDOWN,
                         custom_value=True,
                     )
                 ),
-                vol.Required(CONF_ACTION_CODE): str,
+                vol.Optional(CONF_ACTION_CODE): str,
+                vol.Required("is_toggle", default=False): bool,
+                vol.Required("supports_speed", default=True): bool,
+                vol.Required("supports_temp", default=True): bool,
             }
         )
         return self.async_show_form(step_id="configure_mode", data_schema=schema)
@@ -545,7 +549,6 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         speed_step = 1
 
         mode_options = []
-        fan_mode_options = []
 
         for action in self.actions:
             atype = action.get(CONF_ACTION_TYPE)
@@ -591,36 +594,19 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         # Add HVAC mode for AC devices
-        if device_type == DEVICE_TYPE_AC:
-            hvac_modes = ["off"]
-            if mode_options:
-                hvac_modes.extend(mode_options)
-            else:
-                hvac_modes.extend(["cool", "heat"])
-
-            schema_dict[vol.Optional("current_hvac_mode", default="off")] = selector.SelectSelector(
+        if device_type == DEVICE_TYPE_AC and mode_options:
+            schema_dict[vol.Optional("current_hvac_mode", default=mode_options[0])] = selector.SelectSelector(
                 selector.SelectSelectorConfig(
-                    options=hvac_modes,
+                    options=mode_options,
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             )
 
-        # Add fan speed for AC devices with speed control
-        if device_type == DEVICE_TYPE_AC and has_speed:
-            steps = int((max_speed - min_speed) / speed_step) + 1
-            fan_mode_options = [str(i) for i in range(1, steps + 1)]
-            schema_dict[vol.Optional("current_fan_mode", default="1")] = selector.SelectSelector(
-                selector.SelectSelectorConfig(
-                    options=fan_mode_options,
-                    mode=selector.SelectSelectorMode.DROPDOWN,
-                )
-            )
-
-        # Add speed for Fan devices
-        if device_type == DEVICE_TYPE_FAN and has_speed:
+        # Add speed for Fan and AC devices
+        if device_type in (DEVICE_TYPE_FAN, DEVICE_TYPE_AC) and has_speed:
             schema_dict[vol.Optional("current_speed", default=min_speed)] = selector.NumberSelector(
                 selector.NumberSelectorConfig(
-                    mode=selector.NumberSelectorMode.BOX,
+                    mode=selector.NumberSelectorMode.SLIDER,
                     min=min_speed,
                     max=max_speed,
                     step=speed_step,

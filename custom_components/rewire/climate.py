@@ -15,7 +15,6 @@ from homeassistant.helpers import script
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
-    ACTION_TYPE_MODE,
     ACTION_TYPE_OSCILLATE,
     ACTION_TYPE_POWER,
     ACTION_TYPE_SPEED,
@@ -86,6 +85,9 @@ class RewireClimate(RewireEntity, ClimateEntity):
         self._speed_inc_code = None
         self._speed_dec_code = None
         self._temp_unit = None  # Store configured temperature unit
+        self._mode_features = {}
+        self._toggle_modes_order = []
+        self._toggle_code = None
         min_temp = 16
         max_temp = 30
         temp_step = 1
@@ -121,11 +123,19 @@ class RewireClimate(RewireEntity, ClimateEntity):
                     min_speed = action.get(CONF_MIN_SPEED, min_speed)
                     max_speed = action.get(CONF_MAX_SPEED, max_speed)
                     speed_step = action.get(CONF_SPEED_STEP, speed_step)
-                elif atype == ACTION_TYPE_MODE:
                     mode_name = action.get("mode_name")
                     ir_code = action.get("ir_code")
-                    if mode_name and ir_code:
-                        self._hvac_mode_codes[mode_name] = ir_code
+                    if mode_name:
+                        if ir_code:
+                            self._hvac_mode_codes[mode_name] = ir_code
+                        self._mode_features[mode_name] = {
+                            "speed": action.get("supports_speed", True),
+                            "temp": action.get("supports_temp", True),
+                        }
+                        if action.get("is_toggle"):
+                            if ir_code and not getattr(self, "_toggle_code", None):
+                                self._toggle_code = ir_code
+                            self._toggle_modes_order.append(mode_name)
         else:
             # Legacy Linear Config
             self._power_on_code = data.get(CONF_POWER_ON_CODE)
@@ -154,15 +164,10 @@ class RewireClimate(RewireEntity, ClimateEntity):
             for mode in self._hvac_mode_codes:
                 if mode in [HVACMode.COOL, HVACMode.HEAT, HVACMode.AUTO, HVACMode.DRY, HVACMode.FAN_ONLY]:
                     valid_modes.append(mode)
-            # Ensure we have at least Cool/Heat if Power is present but no specific modes?
-            # User said "Keep Power and Mode Separate", so if modes are explicit, trust them.
-            # But if config has ONLY modes, we need to ensure we can set them.
-            self._attr_hvac_modes = sorted(list(set(valid_modes)))
-        elif self._power_on_code:
-            # Fallback for simple toggles
-            self._attr_hvac_modes = [HVACMode.OFF, HVACMode.COOL, HVACMode.HEAT]
 
-        if len(self._attr_hvac_modes) > 1:
+        self._attr_hvac_modes = sorted(list(set(valid_modes)))
+
+        if self._power_on_code or self._power_off_code or len(self._attr_hvac_modes) > 1:
             self._base_features |= ClimateEntityFeature.TURN_ON | ClimateEntityFeature.TURN_OFF
 
         if self._temp_inc_code and self._temp_dec_code:
@@ -229,6 +234,9 @@ class RewireClimate(RewireEntity, ClimateEntity):
                 }
                 self._attr_hvac_mode = mode_map.get(mode_str, HVACMode.OFF)
 
+            if "power_state" in initial_state and not initial_state["power_state"]:
+                self._attr_hvac_mode = HVACMode.OFF
+
             if "current_temp" in initial_state:
                 configured_temp = float(initial_state["current_temp"])
                 system_unit = coordinator.hass.config.units.temperature_unit
@@ -241,6 +249,15 @@ class RewireClimate(RewireEntity, ClimateEntity):
                 else:
                     self._attr_target_temperature = configured_temp
 
+            if "current_speed" in initial_state:
+                speed_val = initial_state["current_speed"]
+                if hasattr(self, "_attr_fan_modes"):
+                    idx = int((speed_val - min_speed) / speed_step)
+                    if 0 <= idx < len(self._attr_fan_modes):
+                        self._attr_fan_mode = self._attr_fan_modes[idx]
+                        self._curr_speed_idx = idx
+
+            # Fallback for old configs
             if "current_fan_mode" in initial_state:
                 self._attr_fan_mode = initial_state["current_fan_mode"]
                 # Update internal index
@@ -303,7 +320,25 @@ class RewireClimate(RewireEntity, ClimateEntity):
         else:
             # Check if we have a specific code for this mode
             code_sent = False
-            if self._hvac_mode_codes and hvac_mode in self._hvac_mode_codes:
+
+            # If target mode is a toggle mode and we have a current toggle state
+            current_mode = self._attr_hvac_mode
+            if (
+                hvac_mode in self._toggle_modes_order
+                and getattr(self, "_toggle_code", None)
+                and current_mode in self._toggle_modes_order
+            ):
+                current_idx = self._toggle_modes_order.index(current_mode)
+                target_idx = self._toggle_modes_order.index(hvac_mode)
+
+                # Calculate number of presses needed
+                diff = (target_idx - current_idx) % len(self._toggle_modes_order)
+                if diff > 0:
+                    await self._send_code(self._toggle_code, repeats=diff, delay=0.5)
+                    code_sent = True
+
+            # Send explicit mode code if it wasn't a toggle jump
+            if not code_sent and self._hvac_mode_codes and hvac_mode in self._hvac_mode_codes:
                 await self._send_code(self._hvac_mode_codes[hvac_mode])
                 code_sent = True
 
@@ -359,7 +394,11 @@ class RewireClimate(RewireEntity, ClimateEntity):
         """Turn the entity on."""
         if self._power_on_code:
             await self._send_code(self._power_on_code)
-        self._attr_hvac_mode = HVACMode.COOL
+        modes = [m for m in self._attr_hvac_modes if m != HVACMode.OFF]
+        if modes:
+            self._attr_hvac_mode = modes[0]
+        else:
+            self._attr_hvac_mode = HVACMode.COOL
         self.coordinator.set_device_state({"power": True})
         self.async_write_ha_state()
 
@@ -375,6 +414,17 @@ class RewireClimate(RewireEntity, ClimateEntity):
             features &= ~ClimateEntityFeature.TARGET_TEMPERATURE
             features &= ~ClimateEntityFeature.FAN_MODE
             features &= ~ClimateEntityFeature.SWING_MODE
+        else:
+            # Dynamically restrict speed/temp based on the current mode config
+            mode_config = self._mode_features.get(self._attr_hvac_mode, {})
+            supports_temp = mode_config.get("temp", True)
+            supports_speed = mode_config.get("speed", True)
+
+            if not supports_temp:
+                features &= ~ClimateEntityFeature.TARGET_TEMPERATURE
+            if not supports_speed:
+                features &= ~ClimateEntityFeature.FAN_MODE
+
         return features
 
     async def async_set_temperature(self, **kwargs: Any) -> None:

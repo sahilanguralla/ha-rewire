@@ -71,7 +71,7 @@ async def async_setup_entry(
                 CONF_MIN_VALUE: action.get(CONF_MIN_SPEED, 1),
                 CONF_MAX_VALUE: action.get(CONF_MAX_SPEED, 10),
                 CONF_STEP_VALUE: action.get(CONF_SPEED_STEP, 1),
-                "mode": NumberMode.BOX,
+                "mode": NumberMode.SLIDER,
             }
             entities.append(RewireNumber(coordinator, config_entry.entry_id, number_action))
 
@@ -89,7 +89,7 @@ async def async_setup_entry(
                 CONF_MIN_VALUE: data.get(CONF_MIN_SPEED, 1),
                 CONF_MAX_VALUE: data.get(CONF_MAX_SPEED, 10),
                 CONF_STEP_VALUE: data.get(CONF_SPEED_STEP, 1),
-                "mode": NumberMode.BOX,
+                "mode": NumberMode.SLIDER,
             }
             async_add_entities([RewireNumber(coordinator, config_entry.entry_id, action)])
 
