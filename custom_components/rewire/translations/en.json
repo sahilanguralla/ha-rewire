@@ -142,7 +142,10 @@
         "description": "Configure mode selection.",
         "data": {
           "mode_name": "Mode Name (e.g. Heat, Cool)",
-          "ir_code": "IR Code"
+          "ir_code": "IR Code",
+          "is_toggle": "Is this a toggle code?",
+          "supports_speed": "Supports Speed Control?",
+          "supports_temp": "Supports Temperature Control?"
         }
       },
       "configure_oscillate": {
