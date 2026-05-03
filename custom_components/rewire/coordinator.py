@@ -1,4 +1,5 @@
 """Data coordinator for RewIRe devices."""
+
 import logging
 from datetime import timedelta
 from typing import Any, Dict
@@ -21,6 +22,7 @@ class RewireCoordinator(DataUpdateCoordinator):
             _LOGGER,
             name="RewIRe",
             update_interval=timedelta(seconds=config_entry.options.get("update_interval", 300)),
+            config_entry=config_entry,
         )
         self._device_state: Dict[str, Any] = {
             "power": False,

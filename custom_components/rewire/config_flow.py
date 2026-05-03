@@ -283,6 +283,7 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Let's assume discrete modes for now as separate actions?
             # "Action Name: Heat", "Code: ...". Type: Mode.
             user_input[CONF_ACTION_TYPE] = ACTION_TYPE_MODE
+            user_input[CONF_ACTION_NAME] = f"Mode {user_input.get('mode_name', '').capitalize()}"
             self.actions.append(user_input)
             return await self.async_step_actions()
 
