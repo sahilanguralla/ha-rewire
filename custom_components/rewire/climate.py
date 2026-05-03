@@ -327,9 +327,11 @@ class RewireClimate(RewireEntity, ClimateEntity):
     async def async_set_fan_mode(self, fan_mode: str) -> None:
         """Set new target fan mode."""
         if self._attr_hvac_mode == HVACMode.OFF:
-            _LOGGER.debug("Fan mode control ignored because AC is OFF")
-            self.async_write_ha_state()
-            return
+            allowed = self.coordinator.config_entry.options.get("actions_when_off", [])
+            if ACTION_TYPE_SPEED not in allowed:
+                _LOGGER.debug("Fan mode control ignored because AC is OFF")
+                self.async_write_ha_state()
+                return
 
         if not self._speed_inc_code:
             return
@@ -372,17 +374,23 @@ class RewireClimate(RewireEntity, ClimateEntity):
         """Return the list of supported features."""
         features = self._base_features
         if self._attr_hvac_mode == HVACMode.OFF:
-            features &= ~ClimateEntityFeature.TARGET_TEMPERATURE
-            features &= ~ClimateEntityFeature.FAN_MODE
-            features &= ~ClimateEntityFeature.SWING_MODE
+            allowed = self.coordinator.config_entry.options.get("actions_when_off", [])
+            if ACTION_TYPE_TEMP not in allowed:
+                features &= ~ClimateEntityFeature.TARGET_TEMPERATURE
+            if ACTION_TYPE_SPEED not in allowed:
+                features &= ~ClimateEntityFeature.FAN_MODE
+            if ACTION_TYPE_OSCILLATE not in allowed:
+                features &= ~ClimateEntityFeature.SWING_MODE
         return features
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set new target temperature."""
         if self._attr_hvac_mode == HVACMode.OFF:
-            _LOGGER.debug("Temperature control ignored because AC is OFF")
-            self.async_write_ha_state()
-            return
+            allowed = self.coordinator.config_entry.options.get("actions_when_off", [])
+            if ACTION_TYPE_TEMP not in allowed:
+                _LOGGER.debug("Temperature control ignored because AC is OFF")
+                self.async_write_ha_state()
+                return
 
         temperature = kwargs.get("temperature")
         if temperature is None or not self._temp_inc_code:
@@ -409,8 +417,10 @@ class RewireClimate(RewireEntity, ClimateEntity):
             return
 
         if self._attr_hvac_mode == HVACMode.OFF:
-            _LOGGER.debug("Swing mode ignored because AC is OFF")
-            return
+            allowed = self.coordinator.config_entry.options.get("actions_when_off", [])
+            if ACTION_TYPE_OSCILLATE not in allowed:
+                _LOGGER.debug("Swing mode ignored because AC is OFF")
+                return
 
         # Assuming single code toggles oscillation
         # In a real scenario, might need ON/OFF codes.

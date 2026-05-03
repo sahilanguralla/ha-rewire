@@ -104,16 +104,16 @@ class RewireFan(RewireEntity, FanEntity):
         # Unique ID based on the entry
         self._attr_unique_id = f"{DOMAIN}_{entry_id}_fan"
         self._attr_name = data.get("name")
-        self._attr_supported_features = FanEntityFeature(0)
+        self._base_features = FanEntityFeature(0)
 
         if self._power_on_code and self._power_off_code:
-            self._attr_supported_features |= FanEntityFeature.TURN_ON | FanEntityFeature.TURN_OFF
+            self._base_features |= FanEntityFeature.TURN_ON | FanEntityFeature.TURN_OFF
 
         if self._oscillate_code:
-            self._attr_supported_features |= FanEntityFeature.OSCILLATE
+            self._base_features |= FanEntityFeature.OSCILLATE
 
         if self._speed_inc_code and self._speed_dec_code:
-            self._attr_supported_features |= FanEntityFeature.SET_SPEED
+            self._base_features |= FanEntityFeature.SET_SPEED
             self._speed_min = min_speed
             self._speed_max = max_speed
             self._speed_step = speed_step
@@ -208,8 +208,26 @@ class RewireFan(RewireEntity, FanEntity):
         self._attr_is_on = False
         self.async_write_ha_state()
 
+    @property
+    def supported_features(self) -> FanEntityFeature:
+        """Return the list of supported features."""
+        features = self._base_features
+        if not self._attr_is_on:
+            allowed = self.coordinator.config_entry.options.get("actions_when_off", [])
+            if ACTION_TYPE_SPEED not in allowed:
+                features &= ~FanEntityFeature.SET_SPEED
+            if ACTION_TYPE_OSCILLATE not in allowed:
+                features &= ~FanEntityFeature.OSCILLATE
+        return features
+
     async def async_oscillate(self, oscillating: bool) -> None:
         """Oscillate the fan."""
+        if not self._attr_is_on:
+            allowed = self.coordinator.config_entry.options.get("actions_when_off", [])
+            if ACTION_TYPE_OSCILLATE not in allowed:
+                _LOGGER.debug("Oscillation ignored because fan is OFF")
+                return
+
         if self._oscillate_code:
             # Assumes toggle behavior
             await self._send_code(self._oscillate_code)
@@ -221,6 +239,12 @@ class RewireFan(RewireEntity, FanEntity):
         if percentage == 0:
             await self.async_turn_off()
             return
+
+        if not self._attr_is_on:
+            allowed = self.coordinator.config_entry.options.get("actions_when_off", [])
+            if ACTION_TYPE_SPEED not in allowed:
+                _LOGGER.debug("Speed control ignored because fan is OFF")
+                return
 
         if not self._speed_inc_code:
             return
