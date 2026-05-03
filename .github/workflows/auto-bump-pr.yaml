@@ -1,8 +1,8 @@
-name: Auto Bump Version in PR
+name: Auto Bump Version
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [closed]
     branches: [main]
 
   workflow_dispatch:
@@ -10,7 +10,7 @@ on:
 jobs:
   bump-version:
     name: Bump version and create changelog with commitizen
-    if: "!startsWith(github.event.head_commit.message, 'ci: bump version')"
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'release')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -18,7 +18,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
@@ -37,29 +36,10 @@ jobs:
       - name: Bump version
         id: cz_bump
         run: |
-          # Get current version
-          CURRENT_VERSION=$(cz version --project)
-
-          # Find merge base
-          git fetch origin ${{ github.base_ref }}
-          MERGE_BASE=$(git merge-base origin/${{ github.base_ref }} HEAD)
-
-          # Temporarily tag the merge base so commitizen only looks at PR commits
-          TEMP_TAG="temp-${{ github.run_id }}-${CURRENT_VERSION}"
-          git tag $TEMP_TAG $MERGE_BASE
-
-          # Check if a bump is needed and perform it (files only)
-          if cz bump --yes --files-only --increment-mode exact --tag-format "temp-${{ github.run_id }}-\$version"; then
+          # Perform the bump on main
+          if cz bump --yes; then
             echo "bumped=true" >> $GITHUB_OUTPUT
-
-            # Find all manifest.json files in custom_components and add them
-            find custom_components -name "manifest.json" -type f | xargs git add
-            git add pyproject.toml
-            git commit -m "ci: bump version" || echo "No changes to commit"
-            git push
+            git push origin main --tags
           else
             echo "bumped=false" >> $GITHUB_OUTPUT
           fi
-
-          # Cleanup temp tag
-          git tag -d $TEMP_TAG
