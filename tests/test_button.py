@@ -1,4 +1,5 @@
 """Test rewire button platform."""
+
 from unittest.mock import MagicMock, patch
 
 from homeassistant.core import HomeAssistant
@@ -24,10 +25,11 @@ async def test_button_creation_and_press(hass: HomeAssistant):
             }
         ],
         CONF_ACTIONS: [
-            {"name": "Power On", "ir_code": "code_on"},
-            {"name": "Power Off", "ir_code": "code_off"},
+            {"name": "Power On", "ir_code": "code_on", "action_type": "button"},
+            {"name": "Power Off", "ir_code": "code_off", "action_type": "button"},
         ],
     }
+    config_entry.options = {}
 
     # Setup coordinator
     with patch("custom_components.rewire.coordinator.RewireCoordinator.async_config_entry_first_refresh"):
@@ -52,14 +54,18 @@ async def test_button_creation_and_press(hass: HomeAssistant):
     assert "power_on" in button_on.unique_id
 
     # Test pressing the button
-    with patch.object(hass.services, "async_call") as mock_call:
+    button_on.hass = hass
+    with patch("homeassistant.core.ServiceRegistry.async_call") as mock_call:
         await button_on.async_press()
 
         mock_call.assert_called_once_with(
             "remote",
             "send_command",
-            {
+            service_data={
                 "device_id": "blaster_device_id",
                 "command": ["code_on"],
             },
+            target=None,
+            context=button_on._context,
+            blocking=True,
         )

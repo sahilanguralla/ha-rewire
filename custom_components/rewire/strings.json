@@ -191,7 +191,8 @@
       "init": {
         "title": "RewIRe Options",
         "data": {
-          "update_interval": "Coordinator Update Interval (seconds)"
+          "update_interval": "Coordinator Update Interval (seconds)",
+          "actions_when_off": "Actions allowed when device is off"
         }
       }
     }

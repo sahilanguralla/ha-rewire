@@ -1,4 +1,5 @@
 """Config flow for RewIRe."""
+
 import logging
 from typing import Any, Dict, Optional
 
@@ -36,6 +37,7 @@ from .const import (
     CONF_MIN_SPEED,
     CONF_MIN_TEMP,
     CONF_MIN_VALUE,
+    CONF_OSCILLATE_CODE,
     CONF_POWER_OFF_CODE,
     CONF_POWER_ON_CODE,
     CONF_SPEED_DEC_CODE,
@@ -281,6 +283,7 @@ class RewireConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Let's assume discrete modes for now as separate actions?
             # "Action Name: Heat", "Code: ...". Type: Mode.
             user_input[CONF_ACTION_TYPE] = ACTION_TYPE_MODE
+            user_input[CONF_ACTION_NAME] = f"Mode {user_input.get('mode_name', '').capitalize()}"
             self.actions.append(user_input)
             return await self.async_step_actions()
 
@@ -662,13 +665,56 @@ class RewireOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        options_schema = vol.Schema(
-            {
+        configured_actions = self.config_entry.data.get(CONF_ACTIONS, [])
+        options = []
+        for action in configured_actions:
+            atype = action.get(CONF_ACTION_TYPE)
+            if atype in (
+                ACTION_TYPE_TEMP,
+                ACTION_TYPE_SPEED,
+                ACTION_TYPE_OSCILLATE,
+                ACTION_TYPE_MODE,
+                ACTION_TYPE_BRIGHTNESS,
+            ):
+                options.append(atype)
+
+        # Legacy fallback
+        if not options:
+            data = self.config_entry.data
+            if data.get(CONF_TEMP_INC_CODE) and data.get(CONF_TEMP_DEC_CODE):
+                options.append(ACTION_TYPE_TEMP)
+            if data.get(CONF_SPEED_INC_CODE) and data.get(CONF_SPEED_DEC_CODE):
+                options.append(ACTION_TYPE_SPEED)
+            if data.get(CONF_OSCILLATE_CODE):
+                options.append(ACTION_TYPE_OSCILLATE)
+            if data.get(CONF_BRIGHTNESS_INC_CODE) and data.get(CONF_BRIGHTNESS_DEC_CODE):
+                options.append(ACTION_TYPE_BRIGHTNESS)
+
+        options = list(set(options))
+        options.sort()
+
+        schema_dict = {
+            vol.Optional(
+                "update_interval",
+                default=self.config_entry.options.get("update_interval", 300),
+            ): int,
+        }
+
+        if options:
+            schema_dict[
                 vol.Optional(
-                    "update_interval",
-                    default=self.config_entry.options.get("update_interval", 300),
-                ): int,
-            }
-        )
+                    "actions_when_off",
+                    default=self.config_entry.options.get("actions_when_off", []),
+                )
+            ] = selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=options,
+                    multiple=True,
+                    translation_key="action_type",
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            )
+
+        options_schema = vol.Schema(schema_dict)
 
         return self.async_show_form(step_id="init", data_schema=options_schema)
